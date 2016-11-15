@@ -2,6 +2,7 @@ data <- read.csv("data_pollenlimitaiton_Sept16.csv", sep=";")
 head(data)
 
 ### LIBRARIES
+library("lubridate")
 library("ggplot2")
 library("tidyr")
 library("dplyr")
@@ -18,7 +19,11 @@ Ranunculus <- data %>%
   mutate(OrigTempLevel = ifelse(TO %in% c(5.87, 6.58), 1, 2)) %>%
   mutate(OrigPrecLevel = ifelse(PO %in% c(1925, 1848), 1, 2)) %>%
   mutate(DestTempLevel = ifelse(TD %in% c(5.87, 6.58), 1, 2)) %>%
-  mutate(DestPrecLevel = ifelse(PD %in% c(1925, 1848), 1, 2))
+  mutate(DestPrecLevel = ifelse(PD %in% c(1925, 1848), 1, 2)) %>% 
+  mutate(temp = ifelse(pheno.unit == "dogs", , NA))
+
+
+
 
 head(Ranunculus)
 ### FIGURES
