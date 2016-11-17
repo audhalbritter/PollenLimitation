@@ -20,8 +20,8 @@ Ranunculus <- data %>%
   
   # Make Code nice
   mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("bp", "f",  "s", "bf", "fs"), c("Bud", "Flower", "Fruit", "Bud-Flower", "Flower-Seed"))) %>%
-  mutate(trt = plyr::mapvalues(trt, c("c", "wa", "we", "ww"), c("Control", "Warmer", "Wetter", "Warmer & wetter"))) %>%
-  mutate(trt = factor(trt, levels = c("Control", "Warmer", "Wetter", "Warmer & wetter"))) %>% 
+  mutate(trt = plyr::mapvalues(trt, c("c", "wa", "we", "ww"), c("Control", "Warmer", "Wetter", "WW"))) %>%
+  mutate(trt = factor(trt, levels = c("Control", "Warmer", "Wetter", "WW"))) %>% 
   mutate(OrigTempLevel = ifelse(TO %in% c(5.87, 6.58), 1, 2)) %>%
   mutate(OrigPrecLevel = ifelse(PO %in% c(1925, 1848), 1, 2)) %>%
   mutate(DestTempLevel = ifelse(TD %in% c(5.87, 6.58), 1, 2)) %>%
