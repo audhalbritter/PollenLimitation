@@ -1,7 +1,7 @@
 #### FIGURE ABOUT PHENOLOGY
 
 head(Ranunculus)
-
+library("cowplot")
 
 ### FIGURE ### DA CONTROLLARE
 ### DOY
@@ -17,16 +17,35 @@ ggplot() +
 limits <- aes(ymax = resp + se, ymin=resp - se)
 ### MAKING FIGURE
 
-### SIMPLE FIGURE
-Ranunculus %>%
-  filter(pheno.unit == "dogs") %>% 
+### Difference between Control and Treatment
+EffectSize <- Ranunculus %>% 
   filter(orig != "VES" | trt != "Control") %>% # remove Control at Veskre
-  group_by(trt, pheno.stage) %>% 
+  filter(pheno.unit == "doy") %>% 
+  group_by(trt, site, orig, pheno.unit, pheno.stage) %>% 
   summarise(N = sum(!is.na(value)), mean = mean(value, na.rm = TRUE), se = sd(value, na.rm = TRUE)/sqrt(N)) %>% 
-  ggplot(aes(x = trt, y = mean, shape = pheno.stage, color = pheno.stage, ymax = mean + se, ymin = mean - se)) +
-  geom_point(size = 3) +
-  ylab(paste("Mean value in days after SM")) + xlab(paste("")) +
-  geom_errorbar(width=0.2)
+  ungroup() %>% 
+  select(-site, -N, -se) %>% 
+  spread(key = trt, value = mean) %>% 
+  mutate(Warmer = Warmer - Control, Wetter = Wetter - Control, WW = WW - Control) %>% 
+  gather(key = Treatment, value = Effect, -orig, -pheno.unit, -pheno.stage, -Control) %>% 
+  filter(!is.na(Effect)) %>% 
+  mutate(newname = paste(orig, Treatment, sep = "_")) %>% 
+  mutate(newname = plyr::mapvalues(newname, c("GUD_Warmer", "SKJ_Warmer", "GUD_Wetter", "RAM_Wetter", "GUD_WW"), c("dry", "wet", "alpine", "subalpine", "Warm & Wet"))) %>% 
+  mutate(newname = factor(newname, levels = c("dry", "wet", "alpine", "subalpine", "Warm & Wet")))
+  
+th <- theme_bw(base_size = 12, aspect.ratio=1/1)
+
+EffectSizePlot <- ggplot(EffectSize, aes(x = newname, y = Effect, color = Treatment)) +
+  geom_point(size = 1.8) +
+  labs(x = "", y = "Treatment - control in days") +
+  scale_colour_manual(name = "", values = c("red", "blue", "purple")) +
+  geom_hline(yintercept=0, color = "gray") +
+  facet_grid(~ pheno.stage) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+save_plot("EffectSizePlot.pdf", EffectSizePlot,base_aspect_ratio = 1.3)
+
+
 
 
 
