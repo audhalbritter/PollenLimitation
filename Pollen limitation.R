@@ -10,22 +10,31 @@ library("dplyr")
 # SUBSET DATA AND CREATE NEW VARIABLES
 Ranunculus <- data %>% 
   filter(sp == "RAN") %>% # only Ranunculus
-  select(- s.ter, -s.ter.1, -s.ter.2, -s.ter.3, -s.ter.4) %>% 
+  select(- s.ter, -s.ter.1, -s.ter.2, -s.ter.3, -s.ter.4, -doy.bs, -dogs.bs, -doy.rs, -dogs.rs) %>% 
+  
+  # calculate days between bud and flower; flower and seed
+  mutate(days.bf = doy.f - doy.bp, days.fs = doy.s - doy.f) %>% 
   gather(key = variable, value = value, -sp, -site, -orig, -ID, -TD, -PD, -TO, -PO, -trt, -sm) %>%
   separate(variable, into = c("pheno.unit", "pheno.stage"), sep = "\\.") %>%
-  mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("bs", "bp", "f",  "s",  "rs"), c("Bud", "Bud2", "Flower", "Seed", "RipeSeed"))) %>%
-  mutate(trt = plyr::mapvalues(trt, c("c", "wa", "we", "ww"), c("Control", "Warm", "Wet", "Warm & wet"))) %>%
-  mutate(trt = factor(trt, levels = (c("Control", "Warm", "Wet", "Warm & wet")))) %>% 
+  na.omit(value) %>% 
+  
+  # Make Code nice
+  mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("bp", "f",  "s", "bf", "fs"), c("Bud", "Flower", "Fruit", "Bud-Flower", "Flower-Seed"))) %>%
+  mutate(trt = plyr::mapvalues(trt, c("c", "wa", "we", "ww"), c("Control", "Warmer", "Wetter", "Warmer & wetter"))) %>%
+  mutate(trt = factor(trt, levels = c("Control", "Warmer", "Wetter", "Warmer & wetter"))) %>% 
   mutate(OrigTempLevel = ifelse(TO %in% c(5.87, 6.58), 1, 2)) %>%
   mutate(OrigPrecLevel = ifelse(PO %in% c(1925, 1848), 1, 2)) %>%
   mutate(DestTempLevel = ifelse(TD %in% c(5.87, 6.58), 1, 2)) %>%
   mutate(DestPrecLevel = ifelse(PD %in% c(1925, 1848), 1, 2)) %>% 
-  mutate(temp = ifelse(pheno.unit == "dogs", , NA))
 
-
+  # Cumulative Temperature after snowmelt
+  mutate(doy = ifelse(pheno.unit == "doy", value, ifelse(pheno.unit == "dogs", (value + sm), NA))) %>% # get doy for each observation
+  left_join(climateData, by = c("site" = "site", "doy" = "doy")) %>% 
+  mutate(CumTempAfterSM = ifelse(pheno.unit == "days", NA, CumTempAfterSM)) # does not make sense for durations
 
 
 head(Ranunculus)
+
 ### FIGURES
 ### DOY
 ggplot() +
