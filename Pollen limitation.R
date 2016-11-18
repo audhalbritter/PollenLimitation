@@ -13,13 +13,13 @@ Ranunculus <- data %>%
   select(- s.ter, -s.ter.1, -s.ter.2, -s.ter.3, -s.ter.4, -doy.bs, -dogs.bs, -doy.rs, -dogs.rs) %>% 
   
   # calculate days between bud and flower; flower and seed
-  mutate(days.bf = doy.f - doy.bp, days.fs = doy.s - doy.f) %>% 
+  mutate(days.smb = doy.bp - sm, days.bf = doy.f - doy.bp, days.fs = doy.s - doy.f) %>% 
   gather(key = variable, value = value, -sp, -site, -orig, -ID, -TD, -PD, -TO, -PO, -trt, -sm) %>%
   separate(variable, into = c("pheno.unit", "pheno.stage"), sep = "\\.") %>%
   na.omit(value) %>% 
   
   # Make Code nice
-  mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("bp", "f",  "s", "bf", "fs"), c("Bud", "Flower", "Fruit", "Bud-Flower", "Flower-Seed"))) %>%
+  mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("bp", "f",  "s", "smb", "bf", "fs"), c("Bud", "Flower", "Fruit", "SM-Bud", "Bud-Flower", "Flower-Fruit"))) %>%
   mutate(trt = plyr::mapvalues(trt, c("c", "wa", "we", "ww"), c("Control", "Warmer", "Wetter", "WW"))) %>%
   mutate(trt = factor(trt, levels = c("Control", "Warmer", "Wetter", "WW"))) %>% 
   mutate(OrigTempLevel = ifelse(TO %in% c(5.87, 6.58), 1, 2)) %>%
