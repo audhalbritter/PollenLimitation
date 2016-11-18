@@ -13,14 +13,14 @@ ggplot() +
 ggplot() +
   geom_boxplot(data = ran, aes(x= so, y = dogs.f, fill=trt)) +
   scale_fill_manual(values=c("white", "red", "blue", "purple"))
-  
-limits <- aes(ymax = resp + se, ymin=resp - se)
-### MAKING FIGURE
 
+
+### MAKING FIGURE
+## PLASTICITY
 ### Difference between Control and Treatment
 EffectSize <- Ranunculus %>% 
   filter(orig != "VES" | trt != "Control") %>% # remove Control at Veskre
-  filter(pheno.unit == "doy") %>% 
+  filter(pheno.unit == "dogs") %>% 
   group_by(trt, site, orig, pheno.unit, pheno.stage) %>% 
   summarise(N = sum(!is.na(value)), mean = mean(value, na.rm = TRUE), se = sd(value, na.rm = TRUE)/sqrt(N)) %>% 
   ungroup() %>% 
@@ -33,7 +33,6 @@ EffectSize <- Ranunculus %>%
   mutate(newname = plyr::mapvalues(newname, c("GUD_Warmer", "SKJ_Warmer", "GUD_Wetter", "RAM_Wetter", "GUD_WW"), c("dry", "wet", "alpine", "subalpine", "Warm & Wet"))) %>% 
   mutate(newname = factor(newname, levels = c("dry", "wet", "alpine", "subalpine", "Warm & Wet")))
   
-th <- theme_bw(base_size = 12, aspect.ratio=1/1)
 
 EffectSizePlot <- ggplot(EffectSize, aes(x = newname, y = Effect, color = Treatment)) +
   geom_point(size = 1.8) +
@@ -43,9 +42,48 @@ EffectSizePlot <- ggplot(EffectSize, aes(x = newname, y = Effect, color = Treatm
   facet_grid(~ pheno.stage) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-save_plot("EffectSizePlot.pdf", EffectSizePlot,base_aspect_ratio = 1.3)
+save_plot("EffectSizePlot_Dogs.jpeg", EffectSizePlot,base_aspect_ratio = 1.8)
 
 
+
+### DURATION
+DurationPlot <- Ranunculus %>% 
+  filter(orig != "VES" | trt != "Control") %>% # remove Control at Veskre
+  filter(pheno.unit != "doy") %>% 
+  mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("Bud", "Flower", "Fruit""SM-Bud", "Bud-Flower", "Flower-Fruit"), c("B", "Fl", "Fr", "SMB", "BFl", "FlFr"))) %>%
+  mutate(pheno.stage = factor(pheno.stage, levels = c("B", "Fl", "Fr", "SMB", "BFl", "FlFr"))) %>%
+  group_by(trt, site, orig, pheno.stage) %>% 
+  summarise(N = sum(!is.na(value)), mean = mean(value, na.rm = TRUE), se = sd(value, na.rm = TRUE)/sqrt(N)) %>% 
+  ggplot(aes(x = pheno.stage, y = mean, color = trt, group = trt, ymax = mean + se, ymin = mean - se)) +
+  scale_colour_manual(name = "Treatment", values = c("grey", "red", "blue", "purple")) +
+  labs(x = "", y = "Duration between events in days") +
+  geom_point() +
+  geom_line() +
+  geom_errorbar(width=0.2) +
+  facet_grid(~ orig)
+save_plot("DurationPlot.jpeg", DurationPlot, base_aspect_ratio = 1.8)
+
+
+DurationPlot <- Ranunculus %>% 
+  filter(orig != "VES" | trt != "Control") %>% # remove Control at Veskre
+  filter(pheno.unit != "doy") %>% 
+  mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("Bud", "Flower", "Fruit", "SM-Bud", "Bud-Flower", "Flower-Fruit"), c("B", "Fl", "Fr", "B", "Fl", "Fr"))) %>%
+  mutate(pheno.stage = factor(pheno.stage, levels = c("B", "Fl", "Fr", "B", "Fl", "Fr"))) %>%
+  mutate(orig = plyr::mapvalues(orig, c("GUD", "RAM", "SKJ"), c("Alpine-dry", "Subalpine-dry", "Alpine-wet"))) %>%
+  mutate(orig = factor(orig, levels = c("Alpine-dry", "Alpine-wet", "Subalpine-dry"))) %>%
+  group_by(trt, site, orig, pheno.stage, pheno.unit) %>% 
+  summarise(mean = mean(value, na.rm = TRUE)) %>% 
+  spread(key = pheno.unit, value = mean) %>% 
+  ggplot(aes(x = dogs, y = days, shape = pheno.stage, color = trt, group = trt)) +
+  scale_colour_manual(name = "Treatment", values = c("grey", "red", "blue", "purple")) +
+  scale_shape_manual(name = "Event", values = c(16,17,15)) +
+  labs(x = "Onset of event after SM", y = "Duration between events in days") +
+  geom_line(linetype="dashed") +
+  geom_point() +
+  #geom_errorbar(width=0.2) +
+  facet_grid(~ orig)
+  
+save_plot("DurationPlotDOGS.jpeg", DurationPlot, base_aspect_ratio = 2)
 
 
 
