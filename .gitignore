@@ -6,3 +6,5 @@
 *.pdf
 *.png
 *.jpg
+*.Rmd
+*.html
