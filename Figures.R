@@ -24,7 +24,7 @@ FirstTrial <- Ranunculus %>%
   geom_boxplot(aes(x= orig, y = value, fill=trt)) +
   scale_fill_manual(values=c("white", "red", "blue", "purple"))
 
-print(FirstTrial)
+print(FirstTrial) + th
 
 ## ----FirstTrialDogs
 ### DOGS
@@ -128,15 +128,14 @@ EventData <- EventMeanAndSE %>%
 OnsetDurationEventPlot <- ggplot(EventData, aes(x = dogs.x, y = days.x, shape = pheno.stage, color = trt, group = trt, ymax = days.x + days.y, ymin = days.x - days.y, xmax = dogs.x + dogs.y, xmin = dogs.x - dogs.y)) +
   scale_colour_manual(name = "Treatment", values = c("grey", "red", "blue", "purple")) +
   scale_shape_manual(name = "Event", values = c(16,17,15)) +
-  labs(x = "Onset of event in days after Snowmelt", y = "Duration between events in days") +
-  geom_errorbar(width=0.2) +
+  labs(x = "Onset of event in days after snowmelt", y = "Duration between events in days") +
+  geom_errorbar(width=0.18) +
   geom_errorbarh() +
   geom_line(linetype="dashed") +
-  geom_point() +
+  geom_point(size = 2) +
   facet_grid(~ orig)
  
-print(OnsetDurationEventPlot) 
-#save_plot("OnsetDurationEventPlotDOGS.jpeg", OnsetDurationEventPlot, base_aspect_ratio = 2)
+save_plot("OnsetDurationEventPlotDOGS.jpeg", OnsetDurationEventPlot, base_aspect_ratio = 2)
 
 
 
