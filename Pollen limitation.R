@@ -7,6 +7,15 @@ library("ggplot2")
 library("tidyr")
 library("dplyr")
 
+
+# plant size data
+size <- read.csv("size.csv", sep = ";")
+head(size)
+size <- size %>% 
+  select(-Torig, -Porig, -Tdest, -Pdest, -DOY, -blk) %>% 
+  mutate(trt = plyr::mapvalues(trt, c("c", "wa", "we", "ww"), c("Control", "Warmer", "Wetter", "WarmWet")))
+
+
 # SUBSET DATA AND CREATE NEW VARIABLES
 Ranunculus <- data %>% 
   filter(sp == "RAN") %>% # only Ranunculus
@@ -14,7 +23,7 @@ Ranunculus <- data %>%
   
   # calculate days between bud and flower; flower and seed
   mutate(days.smb = doy.bp - sm, days.bf = doy.f - doy.bp, days.fs = doy.s - doy.f) %>% 
-  gather(key = variable, value = value, -sp, -site, -orig, -ID, -TD, -PD, -TO, -PO, -trt, -sm) %>%
+  gather(key = variable, value = value, -sp, -site, -orig, -ID, -ind, -TD, -PD, -TO, -PO, -trt, -sm) %>%
   separate(variable, into = c("pheno.unit", "pheno.stage"), sep = "\\.") %>%
   na.omit(value) %>% 
   
@@ -27,6 +36,9 @@ Ranunculus <- data %>%
   mutate(DestTempLevel = ifelse(TD %in% c(5.87, 6.58), 1, 2)) %>%
   mutate(DestPrecLevel = ifelse(PD %in% c(1925, 1848), 1, 2)) %>% 
 
+  # add Plant size
+  left_join(size, by = c("sp", "site", "orig", "ID", "ind", "trt")) %>% 
+  
   # Cumulative Temperature after snowmelt
   mutate(doy = ifelse(pheno.unit == "doy", value, ifelse(pheno.unit == "dogs", (value + sm), NA))) %>% # get doy for each observation
   left_join(climateData, by = c("site" = "site", "doy" = "doy")) %>% 
@@ -184,3 +196,7 @@ newdat$dogs.f <- predict(fit,newdat, type="response")
 newdat
 
 # no difference in flowering for warmer and wetter
+
+
+
+
