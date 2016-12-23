@@ -8,14 +8,6 @@ library("tidyr")
 library("dplyr")
 
 
-# plant size data
-size <- read.csv("size.csv", sep = ";")
-head(size)
-size <- size %>% 
-  select(-Torig, -Porig, -Tdest, -Pdest, -DOY, -blk) %>% 
-  mutate(trt = plyr::mapvalues(trt, c("c", "wa", "we", "ww"), c("Control", "Warmer", "Wetter", "WarmWet")))
-
-
 # SUBSET DATA AND CREATE NEW VARIABLES
 Ranunculus <- data %>% 
   filter(sp == "RAN") %>% # only Ranunculus
@@ -37,7 +29,7 @@ Ranunculus <- data %>%
   mutate(DestPrecLevel = ifelse(PD %in% c(1925, 1848), 1, 2)) %>% 
 
   # add Plant size
-  left_join(size, by = c("sp", "site", "orig", "ID", "ind", "trt")) %>% 
+  #left_join(size, by = c("sp", "site", "orig", "ID", "ind", "trt")) %>% 
   
   # Cumulative Temperature after snowmelt
   mutate(doy = ifelse(pheno.unit == "doy", value, ifelse(pheno.unit == "dogs", (value + sm), NA))) %>% # get doy for each observation
