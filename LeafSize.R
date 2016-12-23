@@ -57,7 +57,7 @@ LeafSizePlot <- ggplot(MeanData, aes(x = newname, y = Effect, color = Treatment,
   geom_hline(yintercept=0, color = "gray") +
   geom_point(size = 1.8) +
   labs(x = "", y = "Treatment - origin\n control for leaf size in cm") +
-  scale_colour_manual(name = "", values = c("red", "blue", "purple")) +
+  scale_colour_manual(name = "Treatment", values = c("red", "blue", "purple")) +
   ylim(-2.5, 3) +
   geom_errorbar(width=0.2) +
   theme(text = element_text(size = 9), axis.text = element_text(size = 9))
@@ -118,7 +118,7 @@ MeanDataAdapt <- MeanSEAdapt %>%
 LeafSizePlotAdapt <- ggplot(MeanDataAdapt, aes(x = newname, y = Effect, color = Treatment, ymax = Effect + SE, ymin = Effect - SE)) +
   geom_hline(yintercept=0, color = "gray") +
   geom_point(size = 1.8) +
-  labs(x = "", y = "Treatment - destination\n control for leaf size in cm") +
+  labs(x = "", y = "Treatment - dest.\n control for leaf size in cm") +
   scale_colour_manual(name = "", values = c("red", "blue", "purple")) +
   ylim(-2.5, 3) +
   geom_errorbar(width=0.2) +
@@ -129,5 +129,5 @@ LeafSizePlotAdapt <- ggplot(MeanDataAdapt, aes(x = newname, y = Effect, color = 
 save_plot("LeafSizePlotAdapt.jpeg", LeafSizePlotAdapt,base_aspect_ratio = 1.2)
 
 library("cowplot")
-LeafSizes <- plot_grid(LeafSizePlot, LeafSizePlotAdapt, labels = c("a)", "b)"), nrow = 2, align = "v")
+LeafSizes <- plot_grid(LeafSizePlot, LeafSizePlotAdapt, labels = c("1)", "2)"), nrow = 2, align = "v")
 save_plot("LeafSizes.jpeg", LeafSizes,base_aspect_ratio = 1.3)
