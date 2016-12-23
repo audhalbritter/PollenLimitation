@@ -16,7 +16,7 @@ size %>%
 MeanSE <- size %>% 
   filter(orig != "VES" | trt != "Control") %>% # remove Control at Veskre
   group_by(trt, site, orig) %>% 
-  summarise(N = sum(!is.na(size_end)), mean = mean(size_end, na.rm = TRUE), se = sd(size_end, na.rm = TRUE)/sqrt(N))
+  summarise(N = sum(!is.na(size_end)), mean = mean(size_end, na.rm = TRUE), se = 2*sd(size_end, na.rm = TRUE)/sqrt(N))
 
 # only for checking results
 MeanSE %>% filter(trt %in% c("Control", "Warmer")) %>% 
@@ -77,7 +77,7 @@ size %>%
 MeanSEAdapt <- size %>% 
   filter(orig != "GUD" | trt != "Control") %>% # remove Control at Gudmedalen
   group_by(trt, site, orig) %>% 
-  summarise(N = sum(!is.na(size_end)), mean = mean(size_end, na.rm = TRUE), se = sd(size_end, na.rm = TRUE)/sqrt(N)) %>% print(n = 24)
+  summarise(N = sum(!is.na(size_end)), mean = mean(size_end, na.rm = TRUE), se = 2*sd(size_end, na.rm = TRUE)/sqrt(N))
 
 # only for checking results
 MeanSEAdapt %>% filter(trt %in% c("Control", "Wetter")) %>% 
