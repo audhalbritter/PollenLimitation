@@ -47,7 +47,7 @@ CumTempPlot <- CumulativeTemp %>% filter(doy > 160 & doy < 273) %>%
   geom_line() +
   scale_colour_manual(name = "Temperature", values = c("blue", "red")) +
   scale_linetype_manual(name = "Precipitation", values = c(2,1)) +
-  labs(x = "", y = "Cum. temperature")  +
+  labs(x = "", y = "Cumulative\n temperature")  +
   theme(text = element_text(size = 9), axis.text = element_text(size = 9))
 
 
@@ -60,5 +60,5 @@ TempPlot <- CumulativeTemp %>% filter(doy > 160 & doy < 273) %>%
   theme(text = element_text(size = 9), axis.text = element_text(size = 9))
 
 
-ClimatePlot <- plot_grid(TempPlot, CumTempPlot, labels = c("a)", "b)"), nrow = 2, align = "v")
+ClimatePlot <- plot_grid(TempPlot, CumTempPlot, labels = c("1)", "2)"), nrow = 2, align = "v")
 save_plot("ClimatePlot.jpeg", ClimatePlot, base_aspect_ratio = 1)
