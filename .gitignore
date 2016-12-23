@@ -2,6 +2,8 @@
 .Rhistory
 .RData
 *.xlsx
+*.xls
+*.csv
 *.jpeg
 *.Rproj
 *.pdf
