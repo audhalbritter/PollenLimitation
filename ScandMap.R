@@ -28,3 +28,16 @@ ScandMap <- ggplot() +
   theme_minimal()
 
 ggsave("ScandMap.pdf")
+
+
+library(maps)
+x11(width = 4, height = 6.5)
+par(mar = rep(0.1,4))
+
+#force map to cover Norway, Finland and Latvia
+map(region = c("Norway", "Finland", "Latvia"), proj = "sinusoidal", type = "n")
+map.grid(c(0,40, 55, 80), nx = 5, ny = 5, col = "black")
+#map everything that does not start with "Lake"
+map(xlim = c(-130, 130), region = "(?!Lake *)", col = "grey80", fill = TRUE, proj = "", add = TRUE)
+
+box()
