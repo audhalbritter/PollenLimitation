@@ -62,7 +62,7 @@ MeanSE <- Ranunculus %>%
   filter(orig != "VES" | trt != "Control") %>% # remove Control at Veskre
   filter(pheno.unit == "doy") %>% # select unit: doy or dogs plot
   group_by(trt, site, orig, pheno.unit, pheno.stage) %>% 
-  summarise(N = sum(!is.na(value)), mean = mean(value, na.rm = TRUE), se = 2*sd(value, na.rm = TRUE)/sqrt(N))
+  summarise(N = sum(!is.na(value)), mean = mean(value, na.rm = TRUE), se = 2*sd(value, na.rm = TRUE)/sqrt(N)) %>% print(n = 24)
 
 MeanSE %>% filter(trt %in% c("Control", "Wetter")) %>% 
   ggplot(aes(x = trt, y = mean, color = orig, group = orig)) +
@@ -97,7 +97,10 @@ MeanData <- MeanSE %>%
   mutate(newname = factor(newname, levels = c("dry", "wet", "alpine", "subalpine", "warm & wet"))) %>% 
   left_join(SEData, by = c("orig" = "orig", "pheno.stage" = "pheno.stage", "Treatment" = "Treatment")) %>%  # join SE
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "Wetter", "WarmWet"), c("Warmer", "Wetter", "Warm & wet"))) %>% 
-  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Wetter", "Warm & wet"))) 
+  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Wetter", "Warm & wet"))) %>% 
+  mutate(Effect = replace(Effect, c(pheno.stage == "Fruit" & Treatment == "Wetter"), NA)) %>% 
+  mutate(SE = replace(SE, c(pheno.stage == "Fruit" & Treatment == "Wetter"), NA))
+  
   
 
 EffectSizePlot <- ggplot(MeanData, aes(x = newname, y = Effect, color = Treatment, ymax = Effect + SE, ymin = Effect - SE)) +
@@ -135,7 +138,11 @@ EventData <- EventMeanAndSE %>%
   left_join(EventSE, by = c("orig" = "orig", "site" = "site", "pheno.stage" = "pheno.stage", "trt" = "trt"),  suffix = c(".mean", ".se")) %>% # join SE
   ungroup(trt) %>% 
   mutate(trt = plyr::mapvalues(trt, c("Control", "Warmer", "Wetter", "WarmWet"), c("Control", "Warmer", "Wetter", "Warm & wet"))) %>% 
-  mutate(trt = factor(trt, levels = c("Control", "Warmer", "Wetter", "Warm & wet"))) 
+  mutate(trt = factor(trt, levels = c("Control", "Warmer", "Wetter", "Warm & wet"))) %>% 
+  mutate(days.mean = replace(days.mean, c(pheno.stage == "Fruit" & trt == "Wetter"), NA)) %>% 
+  mutate(days.se = replace(days.se, c(pheno.stage == "Fruit" & trt == "Wetter"), NA)) %>% 
+  mutate(dogs.mean = replace(dogs.mean, c(pheno.stage == "Fruit" & trt == "Wetter"), NA)) %>% 
+  mutate(dogs.se = replace(dogs.se, c(pheno.stage == "Fruit" & trt == "Wetter"), NA)) %>%  print(n=24)
 
 EventData %>% group_by(pheno.stage, trt) %>% summarise(mean = mean(days.x))
 EventData %>% filter(trt %in% c("Control", "Wetter")) %>% 
@@ -177,7 +184,7 @@ MeanSEAdapt <- Ranunculus %>%
   filter(orig != "GUD" | trt != "Control") %>% # remove Control at Gudmedalen
   filter(pheno.unit == "dogs") %>% # select unit: doy or dogs plot
   group_by(trt, site, orig, pheno.unit, pheno.stage) %>% 
-  summarise(N = sum(!is.na(value)), mean = mean(value, na.rm = TRUE), se = 2*sd(value, na.rm = TRUE)/sqrt(N)) %>% print(n = 24)
+  summarise(N = sum(!is.na(value)), mean = mean(value, na.rm = TRUE), se = 2*sd(value, na.rm = TRUE)/sqrt(N))
 
 MeanSEAdapt %>% filter(trt %in% c("Control", "Wetter")) %>% 
   ggplot(aes(x = trt, y = mean, color = site, group = site)) +
@@ -211,7 +218,9 @@ MeanDataAdapt <- MeanSEAdapt %>%
   mutate(newname = factor(newname, levels = c("dry", "wet", "alpine", "subalpine", "warm & wet"))) %>% 
   left_join(SEData, by = c("site" = "site", "pheno.stage" = "pheno.stage", "Treatment" = "Treatment")) %>%  # join SE
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "Wetter", "WarmWet"), c("Warmer", "Wetter", "Warm & wet"))) %>% 
-  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Wetter", "Warm & wet"))) 
+  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Wetter", "Warm & wet")))  %>% 
+  mutate(Effect = replace(Effect, c(pheno.stage == "Fruit" & Treatment == "Wetter"), NA)) %>% 
+  mutate(SE = replace(SE, c(pheno.stage == "Fruit" & Treatment == "Wetter"), NA))
 
 
 EffectSizePlotAdapt <- ggplot(MeanDataAdapt, aes(x = newname, y = Effect, color = Treatment, ymax = Effect + SE, ymin = Effect - SE)) +
@@ -223,7 +232,6 @@ EffectSizePlotAdapt <- ggplot(MeanDataAdapt, aes(x = newname, y = Effect, color 
   geom_errorbar(width=0.2) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-print(EffectSizePlotAdapt)
 save_plot("EffectSizePlotAdapt_Doy.jpeg", EffectSizePlotAdapt,base_aspect_ratio = 1.8)
 
 
@@ -234,8 +242,8 @@ EventMeanAndSEAdapt <- Ranunculus %>%
   filter(pheno.unit != "doy") %>% 
   mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("Bud", "Flower", "Fruit", "SM-Bud", "Bud-Flower", "Flower-Fruit"), c("Bud", "Flower", "Fruit", "Bud", "Flower", "Fruit"))) %>%
   mutate(pheno.stage = factor(pheno.stage, levels = c("Bud", "Flower", "Fruit"))) %>%
-  mutate(site = plyr::mapvalues(site, c("RAM", "VES", "SKJ"), c("Subalpine-dry", "Sublpine-wet", "Alpine-wet"))) %>%
-  mutate(site = factor(site, levels = c("Subalpine-dry", "Sublpine-wet", "Alpine-wet"))) %>%
+  mutate(site = plyr::mapvalues(site, c("RAM", "VES", "SKJ"), c("Subalpine-dry", "Subalpine-wet", "Alpine-wet"))) %>%
+  mutate(site = factor(site, levels = c("Subalpine-dry", "Subalpine-wet", "Alpine-wet"))) %>%
   group_by(trt, site, orig, pheno.stage, pheno.unit) %>% 
   summarise(N = sum(!is.na(value)), mean = mean(value, na.rm = TRUE), se = 2*sd(value, na.rm = TRUE)/sqrt(N))
 
@@ -249,10 +257,15 @@ EventDataAdapt <- EventMeanAndSEAdapt %>%
   left_join(EventSEAdapt, by = c("orig" = "orig", "site" = "site", "pheno.stage" = "pheno.stage", "trt" = "trt"),  suffix = c(".mean", ".se")) %>%  # join SE
   ungroup(trt) %>% 
   mutate(trt = plyr::mapvalues(trt, c("Control", "Warmer", "Wetter", "WarmWet"), c("Control", "Warmer", "Wetter", "Warm & wet"))) %>% 
-  mutate(trt = factor(trt, levels = c("Control", "Warmer", "Wetter", "Warm & wet")))
+  mutate(trt = factor(trt, levels = c("Control", "Warmer", "Wetter", "Warm & wet"))) %>% 
+  mutate(days.mean = replace(days.mean, c(pheno.stage == "Fruit" & trt == "Wetter"), NA)) %>% 
+  mutate(days.se = replace(days.se, c(pheno.stage == "Fruit" & trt == "Wetter"), NA)) %>% 
+  mutate(dogs.mean = replace(dogs.mean, c(pheno.stage == "Fruit" & trt == "Wetter"), NA)) %>% 
+  mutate(dogs.se = replace(dogs.se, c(pheno.stage == "Fruit" & trt == "Wetter"), NA))
+
 
 EventDataAdapt %>% group_by(pheno.stage, trt) %>% summarise(mean = mean(days.x))
-EventDataAdapt %>% filter(trt %in% c("Control", "Wetter")) %>% 
+EventDataAdapt %>% filter(trt %in% c("Control", "Warmer")) %>% 
   ggplot(aes(x = trt, y = days.mean, color = site, group = site)) +
   geom_point() +
   geom_line() +
