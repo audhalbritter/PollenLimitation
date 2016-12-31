@@ -30,7 +30,8 @@ ScandMap <- ggplot() +
 ggsave("ScandMap.pdf")
 
 
-library(maps)
+library("maps")
+library("mapproj")
 x11(width = 4, height = 6.5)
 par(mar = rep(0.1,4))
 
@@ -38,6 +39,6 @@ par(mar = rep(0.1,4))
 map(region = c("Norway", "Finland", "Latvia"), proj = "sinusoidal", type = "n")
 map.grid(c(0,40, 55, 80), nx = 5, ny = 5, col = "black")
 #map everything that does not start with "Lake"
-map(xlim = c(-130, 130), region = "(?!Lake *)", col = "grey80", fill = TRUE, proj = "", add = TRUE)
+map(xlim = c(-130, 130), col = "grey80", fill = TRUE, proj = "", add = TRUE)
 
 box()

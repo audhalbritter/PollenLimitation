@@ -34,3 +34,12 @@ climateData <- dailyT %>%
   facet_wrap(~site)
 
 head(climateData)
+
+dailyT %>% 
+  filter(logger == "temp30cm", date >= "2015-06-01" & date <= "2015-08-31") %>% 
+  group_by(site) %>% 
+  summarise(mean(value))
+  
+head(Ranunculus)
+Ranunculus %>% filter(trt == "Wetter", pheno.stage == "Fruit")
+  
