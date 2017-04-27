@@ -17,16 +17,18 @@ Ranunculus <- data %>%
   mutate(prob.fl = ifelse(is.na(doy.f), 0, 1)) %>% 
   
   # calculate days between sm and bud, flower and seed
-  mutate(days.smb = doy.bp - sm, days.smf = doy.f - sm, days.sms = doy.s - sm) %>% 
+  #mutate(days.smb = doy.bp - sm, days.smf = doy.f - sm, days.sms = doy.s - sm) %>% 
+  # calculate days between sm and bud, bud and flower, flower and seed
+  mutate(days.smb = doy.bp - sm, days.smf = doy.f - doy.bp, days.sms = doy.s - doy.f) %>% 
   gather(key = variable, value = value, -sp, -site, -orig, -ID, -ind, -TD, -PD, -TO, -PO, -trt, -sm, -block, -prob.fl) %>%
   separate(variable, into = c("pheno.unit", "pheno.stage"), sep = "\\.") %>%
   
   #na.omit(value) %>% 
   
   # Make Code nice
-  mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("bp", "f",  "s", "smb", "smf", "sms"), c("Bud", "Flower", "Fruit", "SM-Bud", "SM-Flower", "SM-Fruit"))) %>%
-  mutate(trt = plyr::mapvalues(trt, c("c", "wa", "we", "ww"), c("Control", "Warmer", "Wetter", "WarmWet"))) %>%
-  mutate(trt = factor(trt, levels = c("Control", "Warmer", "Wetter", "WarmWet"))) %>% 
+  mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("bp", "f",  "s", "smb", "smf", "sms"), c("Bud", "Flower", "Fruit", "SM-Bud", "Bud-Flower", "Flower-Fruit"))) %>%
+  mutate(trt = plyr::mapvalues(trt, c("c", "wa", "we", "ww"), c("Control", "Warmer", "LaterSM", "WarmLate"))) %>%
+  mutate(trt = factor(trt, levels = c("Control", "Warmer", "LaterSM", "WarmLate"))) %>% 
   mutate(OrigTempLevel = ifelse(TO %in% c(5.87, 6.58), 1, 2)) %>%
   mutate(OrigPrecLevel = ifelse(PO %in% c(1925, 1848), 1, 2)) %>%
   mutate(DestTempLevel = ifelse(TD %in% c(5.87, 6.58), 1, 2)) %>%
