@@ -7,20 +7,24 @@ library("ggplot2")
 library("tidyr")
 library("dplyr")
 
-
 # SUBSET DATA AND CREATE NEW VARIABLES
 Ranunculus <- data %>% 
   filter(sp == "RAN") %>% # only Ranunculus
   select(- s.ter, -s.ter.1, -s.ter.2, -s.ter.3, -s.ter.4, -doy.bs, -dogs.bs, -doy.rs, -dogs.rs) %>% 
+  mutate(block = c(rep(1, 10), rep(2, 10), rep(3, 10), rep(c(1,1,1,2,2), 5), rep(c(1,1,2,2,2), 5), rep(1, 35), rep(2, 35), rep(1, 60), rep(2, 59))) %>% 
   
-  # calculate days between bud and flower; flower and seed
-  mutate(days.smb = doy.bp - sm, days.bf = doy.f - doy.bp, days.fs = doy.s - doy.f) %>% 
-  gather(key = variable, value = value, -sp, -site, -orig, -ID, -ind, -TD, -PD, -TO, -PO, -trt, -sm) %>%
+  # prob. flowering
+  mutate(prob.fl = ifelse(is.na(doy.f), 0, 1)) %>% 
+  
+  # calculate days between sm and bud, flower and seed
+  mutate(days.smb = doy.bp - sm, days.smf = doy.f - sm, days.sms = doy.s - sm) %>% 
+  gather(key = variable, value = value, -sp, -site, -orig, -ID, -ind, -TD, -PD, -TO, -PO, -trt, -sm, -block, -prob.fl) %>%
   separate(variable, into = c("pheno.unit", "pheno.stage"), sep = "\\.") %>%
-  na.omit(value) %>% 
+  
+  #na.omit(value) %>% 
   
   # Make Code nice
-  mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("bp", "f",  "s", "smb", "bf", "fs"), c("Bud", "Flower", "Fruit", "SM-Bud", "Bud-Flower", "Flower-Fruit"))) %>%
+  mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("bp", "f",  "s", "smb", "smf", "sms"), c("Bud", "Flower", "Fruit", "SM-Bud", "SM-Flower", "SM-Fruit"))) %>%
   mutate(trt = plyr::mapvalues(trt, c("c", "wa", "we", "ww"), c("Control", "Warmer", "Wetter", "WarmWet"))) %>%
   mutate(trt = factor(trt, levels = c("Control", "Warmer", "Wetter", "WarmWet"))) %>% 
   mutate(OrigTempLevel = ifelse(TO %in% c(5.87, 6.58), 1, 2)) %>%
