@@ -2,9 +2,7 @@
 
 ## ----loadPhenology
 library("lubridate")
-library("ggplot2")
-library("tidyr")
-library("dplyr")
+library("tidyverse")
 library("cowplot")
 
 # load data
