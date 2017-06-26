@@ -3,13 +3,30 @@
 ## ----EventDiffPlot
 ### PLOT FOR ONSET OF STAGE BETWEEN TREATMENT AND CONTROL - PLASTICITY
 
-xAxis <- data_frame(
-  Treatment = c(rep("Warmer", 3), rep("Later SM", 3), rep("Warm & late", 3)),
+xAxis1 <- data_frame(
+  Treatment = c(rep("Warmer", 3), rep("LaterSM", 3), rep("WarmLate", 3)),
   orig = c("Alpine-late", "Alpine-early", "Subalpine-early", "Alpine-early", "Subalpine-early", "Alpine-late", "Alpine-late", "Alpine-early", "Subalpine-early"),
   newname = c("late", "early", NA, "alpine", "subalpine", NA, NA, "early & alpine", NA)
 )
 
-EventDiff <- Ranunculus %>% 
+
+# Snowmelt date for site
+# Rename to orig site to join and calculate diff in sm for transplants
+SM <- Ranunculus %>% select(site, sm) %>% rename(smOrig = sm) %>% distinct()
+
+SMDiff <- Ranunculus %>% 
+  select(trt, site, orig, sm) %>% 
+  filter(orig != "VES" | trt != "Control") %>% # remove Control at Veskre
+  rename(Treatment = trt) %>%
+  distinct() %>% 
+  left_join(SM, by = c("orig" = "site")) %>% 
+  mutate(smDiff = sm - smOrig) %>% 
+  mutate(orig = plyr::mapvalues(orig, c("GUD", "RAM", "SKJ"), c("Alpine-early", "Subalpine-early", "Alpine-late")))
+
+
+EventDiffData <- Ranunculus %>% 
+  #select(-value) %>% 
+  #rename(value = CumTempAfterSM) %>% 
   filter(orig != "VES" | trt != "Control") %>% # remove Control at Veskre
   filter(pheno.unit != "doy") %>% 
   mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("Bud", "Flower", "Fruit", "SM-Bud", "Bud-Flower", "Flower-Fruit"), c("Bud", "Flower", "Fruit", "Bud", "Flower", "Fruit"))) %>%
@@ -17,7 +34,9 @@ EventDiff <- Ranunculus %>%
   mutate(orig = plyr::mapvalues(orig, c("GUD", "RAM", "SKJ"), c("Alpine-early", "Subalpine-early", "Alpine-late"))) %>%
   mutate(orig = factor(orig, levels = c("Alpine-early", "Alpine-late", "Subalpine-early"))) %>%
   group_by(trt, site, orig, pheno.stage, pheno.unit) %>% 
-  summarise(N = sum(!is.na(value)), mean = mean(value, na.rm = TRUE), se = sd(value, na.rm = TRUE)/sqrt(N)) %>% 
+  summarise(N = sum(!is.na(value)), mean = mean(value, na.rm = TRUE), se = sd(value, na.rm = TRUE)/sqrt(N))
+
+EventDiff <- EventDiffData %>% 
   ungroup(site) %>% 
   select(-site,-N) %>% 
   unite(united, mean, se, sep = "_") %>% 
@@ -39,51 +58,74 @@ EventDiff <- Ranunculus %>%
   separate(col = united, into = c("mean", "se"), sep = "_", convert = TRUE) %>% 
   #separate(col = days, into = c("days_mean", "days_se"), sep = "_", convert = TRUE) %>% 
   #separate(col = dogs, into = c("dogs_mean", "dogs_se"), sep = "_", convert = TRUE) %>% 
-  mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late"))) %>% 
-  #mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late"))) %>% 
-  mutate(mean = replace(mean, c(pheno.stage == "Fruit" & Treatment == "Later SM"), NA)) %>% 
-  mutate(se = replace(se, c(pheno.stage == "Fruit" & Treatment == "Later SM"), NA)) %>% 
+  mutate(mean = replace(mean, c(pheno.stage == "Fruit" & Treatment == "LaterSM"), NA)) %>% 
+  mutate(se = replace(se, c(pheno.stage == "Fruit" & Treatment == "LaterSM"), NA)) %>% 
   #mutate(dogs_mean = replace(dogs_mean, c(pheno.stage == "Fruit" & Treatment == "Wetter"), NA)) %>%
   #mutate(dogs_se = replace(dogs_se, c(pheno.stage == "Fruit" & Treatment == "Wetter"), NA)) %>% 
-  left_join(xAxis, by = c("Treatment", "orig")) %>% 
-  filter(!is.na(newname)) %>% 
-  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late"))) %>% 
-  mutate(newname = factor(newname, levels = c("early", "late", "alpine", "subalpine", "early & alpine"))) %>% 
+  left_join(xAxis1, by = c("Treatment", "orig")) %>% 
+  filter(!is.na(mean)) %>%
   filter(pheno.unit != "days" | pheno.stage != "Bud") %>% # remove intervall SM-Bud because same as Bud
   mutate(pheno.stage = paste0(ifelse(pheno.unit == "days" & pheno.stage == "Flower", "Bud-", ""), pheno.stage)) %>% 
   mutate(pheno.stage = paste0(ifelse(pheno.unit == "days" & pheno.stage == "Fruit", "Flower-", ""), pheno.stage)) %>% 
   mutate(pheno.stage = factor(pheno.stage, levels = c("Bud", "Flower", "Fruit", "Bud-Flower", "Flower-Fruit")))
 
 
+EventDiffN <- EventDiffData %>% 
+  ungroup() %>% 
+  select(trt, orig, pheno.stage, pheno.unit, N) %>% 
+  rename(Treatment = trt) %>% 
+  mutate(pheno.stage = paste0(ifelse(pheno.unit == "days" & pheno.stage == "Flower", "Bud-", ""), pheno.stage)) %>% 
+  mutate(pheno.stage = paste0(ifelse(pheno.unit == "days" & pheno.stage == "Fruit", "Flower-", ""), pheno.stage))
+
+
+ann_text1 <- data.frame(x = c(5,5), y = c(13, -25), lab = c("late", "early"),
+                        pheno.stage = factor("Fruit",levels = c("Bud","Flower","Fruit")))
 
 EventDiffPlot <- EventDiff %>% 
   filter(pheno.stage %in% c("Bud", "Flower", "Fruit")) %>% 
-  ggplot(aes(x = newname, y = mean, color = Treatment, group = Treatment, ymax = mean + 1.96*se, ymin = mean - 1.96*se), shape = pheno.stage) +
-  geom_hline(yintercept = 0, color = "grey") +
-  scale_colour_manual(name = "Treatment", values = c("red", "blue", "purple")) +
-  labs(y = "Difference (treatment - control) in onset \n of stage in days after SM", x = "", title = "Phenotypic plasticity - origin control") +
+  left_join(EventDiffN, by = c("orig", "pheno.stage", "pheno.unit", "Treatment")) %>%
+  left_join(SMDiff, by = c("orig", "Treatment")) %>% 
+  mutate(newname = plyr::mapvalues(newname, c("early", "late", "alpine", "subalpine", "early & alpine"), c("Early SM", "Late SM", "Cold", "Warm", "Early SM & cold"))) %>%
+  mutate(newname = factor(newname, levels = c("Early SM", "Late SM", "Cold", "Warm", "Early SM & cold"))) %>%
+  mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
+  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
+  ggplot(aes(x = smDiff, y = mean, color = Treatment, group = Treatment, ymax = mean + 1.96*se, ymin = mean - 1.96*se, linetype = N > 3), shape = pheno.stage) +
+  geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
+  scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
+  labs(y = "Difference in onset of stage [days] after SMT \n between treatment and origin-control", x = "Difference in SMT between origin and destination site [days]", title = "Phenotypic plasticity: origin-control") +
   geom_errorbar(width=0.18) +
-  geom_point(size = 2) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position="none") +
-  annotate("text", x = 1, y = -25, label= "early") + 
-  annotate("text", x = 1, y = 12, label= "late") + 
+  geom_point(size = 3) +
+  scale_linetype_manual(values = c("dashed", "solid")) +
+  theme(legend.position="none") +
+  panel_border(colour = "black", remove = FALSE) +
+  annotate(geom = "text", x = 25, y = 13, label = "later", color = "grey20") +
+  annotate(geom = "text", x = 25, y = -25, label = "earlier", color = "grey20") +
+  #geom_text(data = ann_text1, aes(x = x, y = y, label = lab), inherit.aes = FALSE, color = "grey40") + 
   facet_grid(~ pheno.stage)
+ggsave(EventDiffPlot, filename = "EventDiffPlot.pdf", height = 4.5)
+
+ ann_text2 <- data.frame(x = c(5,5), y = c(-12, 13), lab = c("shorter", "longer"),
+                        pheno.stage = factor("Flower-Fruit",levels = c("Bud-Flower","Flower-Fruit")))
 
 EventIntervallPlot <- EventDiff %>% 
   filter(pheno.stage %in% c("Bud-Flower", "Flower-Fruit")) %>% 
-  ggplot(aes(x = newname, y = mean, color = Treatment, group = Treatment, ymax = mean + 1.96*se, ymin = mean - 1.96*se), shape = pheno.stage) +
+  left_join(EventDiffN, by = c("orig", "pheno.stage", "pheno.unit", "Treatment")) %>%
+  mutate(newname = plyr::mapvalues(newname, c("early", "late", "alpine", "subalpine", "early & alpine"), c("SM-", "SM+", "T-", "T+", "SM-T-"))) %>%
+  mutate(newname = factor(newname, levels = c("SM-", "SM+", "T-", "T+", "SM-T-"))) %>%
+  mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
+  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
+  ggplot(aes(x = newname, y = mean, color = Treatment, group = Treatment, ymax = mean + 1.96*se, ymin = mean - 1.96*se, linetype = N > 3), shape = pheno.stage) +
   geom_hline(yintercept = 0, color = "grey") +
-  scale_colour_manual(name = "Treatment", values = c("red", "blue", "purple")) +
-  labs(y = "Difference (treatment - control)in intervall\n of stage in days", x = "", title = "Phenotypic plasticity - origin control") +
+  scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
+  labs(y = "Difference (treatment - control)in intervall\n of stage in days", x = "") +
   geom_errorbar(width=0.18) +
   geom_point(size = 2) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position="none") +
-  annotate("text", x = 1, y = -12, label= "shorter") + 
-  annotate("text", x = 1, y = 12, label= "longer") + 
+  scale_linetype_manual(values = c("dashed", "solid"), guide = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position="top") +
+  geom_text(data = ann_text2, aes(x = x, y = y, label = lab), inherit.aes = FALSE, color = "grey40") +
   facet_grid(~ pheno.stage)
 
-
-plot_grid(EventDiffPlot, EventIntervallPlot, ncol = 2)
+PlasticPlot <- plot_grid(EventDiffPlot, EventIntervallPlot, ncol = 2, rel_widths = c(3, 2))
 
 
 
@@ -97,18 +139,33 @@ xAxis2 <- data_frame(
 )
 
   
+###############################################################################
+#### ADAPTATION ####
+###############################################################################
+
+
+SMDiffAdapt <- Ranunculus %>% 
+  select(trt, site, orig, sm) %>% 
+  filter(orig != "GUD" | trt != "Control") %>% # remove Control at Veskre
+  rename(Treatment = trt) %>%
+  distinct() %>% 
+  left_join(SM, by = c("orig" = "site")) %>% 
+  mutate(smDiff = sm - smOrig) %>% 
+  mutate(site = plyr::mapvalues(site, c("RAM", "VES", "SKJ"), c("Subalpine-early", "Subalpine-late", "Alpine-late")))
 
 
 ## ----EventDiffAdaptPlot
 ### PLOT FOR ONSET OF STAGE BETWEEN TREATMENT AND CONTROL - ADAPTATION
 
 xAxis3 <- data_frame(
-  Treatment = c(rep("Warmer", 3), rep("Later SM", 3), rep("Warm & late", 3)),
+  Treatment = c(rep("Warmer", 3), rep("LaterSM", 3), rep("WarmLate", 3)),
   site = c(rep(c("Subalpine-early", "Subalpine-late", "Alpine-late"), 3)),
   newname = c("early", "late", NA, NA, "subalpine", "alpine", NA, "late & subalpine", NA)
 )
 
 EventDiffAdaptData <- Ranunculus %>% 
+  #select(-value) %>% 
+  #rename(value = CumTempAfterSM) %>%
   filter(orig != "GUD" | trt != "Control") %>% # remove Control at Gudmedalen
   filter(pheno.unit != "doy") %>% 
   mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("Bud", "Flower", "Fruit", "SM-Bud", "Bud-Flower", "Flower-Fruit"), c("Bud", "Flower", "Fruit", "Bud", "Flower", "Fruit"))) %>%
@@ -138,12 +195,9 @@ EventDiffAdapt <- EventDiffAdaptData %>%
   gather(key = Treatment, value = united, -site, -pheno.stage, -pheno.unit) %>% 
   separate(col = united, into = c("mean", "se"), sep = "_", convert = TRUE) %>% 
   filter(!is.na(mean)) %>% 
-  mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late"))) %>% 
-  mutate(mean = replace(mean, c(pheno.stage == "Fruit" & Treatment == "Later SM"), NA)) %>% 
-  mutate(se = replace(se, c(pheno.stage == "Fruit" & Treatment == "Later SM"), NA)) %>% 
+  mutate(mean = replace(mean, c(pheno.stage == "Fruit" & Treatment == "LaterSM"), NA)) %>% 
+  mutate(se = replace(se, c(pheno.stage == "Fruit" & Treatment == "LaterSM"), NA)) %>% 
   left_join(xAxis3, by = c("Treatment", "site")) %>% 
-  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late"))) %>% 
-  mutate(newname = factor(newname, levels = c("early", "late", "alpine", "subalpine", "late & subalpine"))) %>% 
   filter(pheno.unit != "days" | pheno.stage != "Bud") %>% # remove intervall SM-Bud because same as Bud
   mutate(pheno.stage = paste0(ifelse(pheno.unit == "days" & pheno.stage == "Flower", "Bud-", ""), pheno.stage)) %>% 
   mutate(pheno.stage = paste0(ifelse(pheno.unit == "days" & pheno.stage == "Fruit", "Flower-", ""), pheno.stage)) %>% 
@@ -155,28 +209,39 @@ EventDiffAdaptN <- EventDiffAdaptData %>%
   select(trt, site, pheno.stage, pheno.unit, N) %>% 
   rename(Treatment = trt) %>% 
   mutate(pheno.stage = paste0(ifelse(pheno.unit == "days" & pheno.stage == "Flower", "Bud-", ""), pheno.stage)) %>% 
-  mutate(pheno.stage = paste0(ifelse(pheno.unit == "days" & pheno.stage == "Fruit", "Flower-", ""), pheno.stage)) %>% 
-  mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late")))
+  mutate(pheno.stage = paste0(ifelse(pheno.unit == "days" & pheno.stage == "Fruit", "Flower-", ""), pheno.stage))
 
 
 
-ann_text3 <- data.frame(x = c(5, 5), y = c(22, -27), lab = c("late", "early"),
+ann_text3 <- data.frame(x = c(5, 5), y = c(25, -28), lab = c("late", "early"),
                        pheno.stage = factor("Fruit",levels = c("Bud","Flower","Fruit")))
 
 EventDiffAdaptPlot <- EventDiffAdapt %>% 
   filter(pheno.stage %in% c("Bud", "Flower", "Fruit")) %>% 
   left_join(EventDiffAdaptN, by = c("site", "pheno.stage", "pheno.unit", "Treatment")) %>% 
-  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late"))) %>% 
-  ggplot(aes(x = newname, y = mean, color = Treatment, group = Treatment, ymax = mean + 1.96*se, ymin = mean - 1.96*se, linetype = N > 3), shape = pheno.stage) +
-  geom_hline(yintercept = 0, color = "grey") +
+  left_join(SMDiffAdapt, by = c("site", "Treatment")) %>% 
+  mutate(newname = plyr::mapvalues(newname, c("early", "late", "alpine", "subalpine", "late & subalpine"), c("SM-", "SM+", "T-", "T+", "SM+T+"))) %>%
+  mutate(newname = factor(newname, levels = c("SM-", "SM+", "T-", "T+", "SM-T-"))) %>%
+  mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
+  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
+  mutate(Pvalue = c(rep(1, 12), rep(2,3))) %>% 
+  mutate(Pvalue = factor(Pvalue)) %>% 
+  ggplot(aes(x = smDiff, y = mean, color = Treatment, shape = Pvalue, group = Treatment, ymax = mean + 1.96*se, ymin = mean - 1.96*se, linetype = N > 3), shape = pheno.stage) +
+  geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
   scale_colour_manual(name = "Treatment", values = c("red", "blue", "purple")) +
-  labs(y = "Difference (treatment - control) in onset \n of stage in days after SM", x = "", title = "Genetic differenciation - destination control") +
+  labs(y = "Difference in onset of stage [days] after SMT \n between treatment and destination-control", x = "Difference in SMT between origin and destination site [days]", title = "Genetic differentiation: destination-control") +
   geom_errorbar(width=0.18) +
-  geom_point(size = 2) +
+  geom_point(size = 3) +
   scale_linetype_manual(values = c("dashed", "solid")) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position="none") +
-  geom_text(data = ann_text3, aes(x = x, y = y, label = lab), inherit.aes = FALSE, color = "grey40") +
+  scale_shape_manual(values = c(16,1)) +
+  theme(legend.position="none") +
+  annotate(geom = "text", x = 25, y = 27, label = "later", color = "grey20") +
+  annotate(geom = "text", x = 25, y = -31, label = "earlier", color = "grey20") +
+  panel_border(colour = "black", remove = FALSE) +
+  #geom_text(data = ann_text3, aes(x = x, y = y, label = lab), inherit.aes = FALSE, color = "grey40") +
   facet_grid(~ pheno.stage)
+ggsave(EventDiffAdaptPlot, filename = "EventDiffAdaptPlot.pdf", height = 4.5)
+
 
 
 ann_text4 <- data.frame(x = c(5, 5), y = c(-14, 14), lab = c("shorter", "longer"),
@@ -185,7 +250,10 @@ ann_text4 <- data.frame(x = c(5, 5), y = c(-14, 14), lab = c("shorter", "longer"
 EventIntervallAdaptPlot <- EventDiffAdapt %>% 
   filter(pheno.stage %in% c("Bud-Flower", "Flower-Fruit")) %>% 
   left_join(EventDiffAdaptN, by = c("site", "pheno.stage", "pheno.unit", "Treatment")) %>% 
-  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late"))) %>%
+  mutate(newname = plyr::mapvalues(newname, c("early", "late", "alpine", "subalpine", "late & subalpine"), c("SM-", "SM+", "T-", "T+", "SM+T+"))) %>%
+  mutate(newname = factor(newname, levels = c("SM-", "SM+", "T-", "T+", "SM-T-"))) %>%
+  mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
+  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
   ggplot(aes(x = newname, y = mean, color = Treatment, group = Treatment, ymax = mean + 1.96*se, ymin = mean - 1.96*se, linetype = N > 3), shape = pheno.stage) +
   geom_hline(yintercept = 0, color = "grey") +
   scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
@@ -193,13 +261,13 @@ EventIntervallAdaptPlot <- EventDiffAdapt %>%
   geom_errorbar(width=0.18) +
   geom_point(size = 2) +
   scale_linetype_manual(values = c("dashed", "solid"), guide = "none") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position="top") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position="top") +
   geom_text(data = ann_text4, aes(x = x, y = y, label = lab), inherit.aes = FALSE, color = "grey40") +
   facet_grid(~ pheno.stage)
 
 
-AdaptPlot <- plot_grid(EventDiffAdaptPlot, EventIntervallAdaptPlot, ncol = 2)
-ggsave(AdaptPlot, filename = "AdaptPlot.pdf")
+AdaptPlot <- plot_grid(EventDiffAdaptPlot, EventIntervallAdaptPlot, ncol = 2, rel_widths = c(3, 2))
+
 
 
 
