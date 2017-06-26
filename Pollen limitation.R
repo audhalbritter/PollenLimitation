@@ -1,11 +1,15 @@
 data <- read.csv("data_pollenlimitaiton_Sept16.csv", sep=";")
 head(data)
 
+data2017 <- read_excel("PollinationDataSheet_2017.xlsx", sheet = 1, col_names = TRUE)
+head(data2017)
+
 ### LIBRARIES
 library("lubridate")
 library("ggplot2")
-library("tidyr")
-library("dplyr")
+library("tidyverse")
+library("cowplot")
+library("readxl")
 
 # SUBSET DATA AND CREATE NEW VARIABLES
 Ranunculus <- data %>% 
@@ -196,5 +200,15 @@ newdat
 # no difference in flowering for warmer and wetter
 
 
+
+
+
+data2017 <- data2017 %>% 
+  mutate(Date_bs = yday(dmy(Date_bs))) %>% 
+  mutate(Date_bp = yday(dmy(Date_bp))) %>% 
+  mutate(Date_f = yday(dmy(Date_f))) %>% 
+  mutate(Date_s = yday(dmy(Date_s))) %>% 
+  mutate(Date_rs = yday(dmy(Date_rs)))
+  
 
 
