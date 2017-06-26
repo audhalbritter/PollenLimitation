@@ -1,5 +1,6 @@
 #### ANALYSIS ####
 head(Ranunculus)
+library("MuMIn")
 
 Ranunculus %>% filter(site == "GUD", pheno.stage == "Bud", pheno.unit == "dogs")
 
@@ -11,8 +12,10 @@ Plastic <- Ranunculus %>%
   filter(OrigSite != "VES_VES") %>% 
   filter(!is.na(value))
   
+fit <- lm(value ~ trt * OrigTempLevel * OrigPrecLevel, data = Plastic, na.action = "na.fail")
+summary(fit)
+dredge(fit)
 
-fit <- lm(value ~ trt * OrigTempLevel * OrigPrecLevel, data = Plastic)
 fit <- glm(value ~ trt + trt:OrigTempLevel + trt:OrigPrecLevel, data = Plastic)
 summary(fit)
 
