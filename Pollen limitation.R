@@ -211,4 +211,9 @@ data2017 <- data2017 %>%
   mutate(Date_rs = yday(dmy(Date_rs)))
   
 
-
+data2017 %>% 
+  filter(SP == "RAN") %>% 
+  ggplot() +
+  geom_boxplot(aes(x= Origin, y = Date_bs)) +
+  scale_fill_manual(values=c("white", "red", "blue", "purple")) +
+  facet_wrap(~ Site)
