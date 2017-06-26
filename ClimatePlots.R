@@ -42,13 +42,14 @@ CumulativeTemp %>%
   summarise(mean(value))
 
 library(cowplot)
-CumTempPlot <- CumulativeTemp %>% filter(doy > 160 & doy < 273) %>%
-  ggplot(aes(x = date, y = cumTemp, color = Tlevel, linetype = Plevel)) +
+CumTempPlot <- CumulativeTemp %>% filter(doy > 160 & doy < 260) %>%
+  ggplot(aes(x = date, y = cumTemp, color = Plevel, linetype = Tlevel)) +
   geom_line() +
-  scale_colour_manual(name = "Temperature", values = c("blue", "red")) +
-  scale_linetype_manual(name = "Precipitation", values = c(2,1)) +
-  labs(x = "", y = "Cumulative\n temperature")  +
-  theme(text = element_text(size = 9), axis.text = element_text(size = 9))
+  scale_colour_manual(name = "Precipitation", values = c("grey80", "grey20")) +
+  scale_linetype_manual(name = "Temperature", values = c(1,2)) +
+  labs(x = "", y = "Cumulative temperature \n in GDD above 1°C")  +
+  theme(text = element_text(size = 12), axis.text = element_text(size = 12), legend.position = "none")
+ggsave(CumTempPlot, filename = "CumTempPlot.pdf", width = 6, height = 3)
 
 
 TempPlot <- CumulativeTemp %>% filter(doy > 160 & doy < 273) %>% 
@@ -62,3 +63,14 @@ TempPlot <- CumulativeTemp %>% filter(doy > 160 & doy < 273) %>%
 
 ClimatePlot <- plot_grid(TempPlot, CumTempPlot, labels = c("1)", "2)"), nrow = 2, align = "v")
 save_plot("ClimatePlot.jpeg", ClimatePlot, base_aspect_ratio = 1)
+
+
+# Mean T in the first week
+CumulativeTemp %>% 
+  group_by(site) %>% 
+  select(-Tlevel, -Plevel) %>% 
+  filter(value > 0, site == "Gud") %>% 
+  slice(1:14) %>% 
+  summarise(mean = mean(value))
+  
+
