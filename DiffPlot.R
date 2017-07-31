@@ -89,9 +89,10 @@ EventDiffPlot <- EventDiff %>%
   mutate(newname = factor(newname, levels = c("Early SM", "Late SM", "Cold", "Warm", "Early SM & cold"))) %>%
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
-  ggplot(aes(x = smDiff, y = mean, color = Treatment, group = Treatment, ymax = mean + 1.96*se, ymin = mean - 1.96*se, linetype = N > 3), shape = pheno.stage) +
+  ggplot(aes(x = smDiff, y = mean, color = Treatment, shape = Treatment, group = Treatment, ymax = mean + 1.96*se, ymin = mean - 1.96*se, linetype = N > 3), shape = pheno.stage) +
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
   scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
+  scale_shape_manual(name = "Treatment:", values = c(17,16,15)) +
   labs(y = "Difference in onset of stage [days] after SMT \n between treatment and origin-control", x = "Difference in SMT between origin and destination site [days]", title = "Phenotypic plasticity: origin-control") +
   geom_errorbar(width=0.18) +
   geom_point(size = 3) +
@@ -226,14 +227,14 @@ EventDiffAdaptPlot <- EventDiffAdapt %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Pvalue = c(rep(1, 12), rep(2,3))) %>% 
   mutate(Pvalue = factor(Pvalue)) %>% 
-  ggplot(aes(x = smDiff, y = mean, color = Treatment, shape = Pvalue, group = Treatment, ymax = mean + 1.96*se, ymin = mean - 1.96*se, linetype = N > 3), shape = pheno.stage) +
+  ggplot(aes(x = smDiff, y = mean, color = Treatment, shape = Treatment, group = Treatment, ymax = mean + 1.96*se, ymin = mean - 1.96*se, linetype = N > 3), shape = pheno.stage) +
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
   scale_colour_manual(name = "Treatment", values = c("red", "blue", "purple")) +
+  scale_shape_manual(name = "Treatment:", values = c(17, 16, 0)) +
   labs(y = "Difference in onset of stage [days] after SMT \n between treatment and destination-control", x = "Difference in SMT between origin and destination site [days]", title = "Genetic differentiation: destination-control") +
   geom_errorbar(width=0.18) +
   geom_point(size = 3) +
   scale_linetype_manual(values = c("dashed", "solid")) +
-  scale_shape_manual(values = c(16,1)) +
   theme(legend.position="none") +
   annotate(geom = "text", x = 25, y = 27, label = "later", color = "grey20") +
   annotate(geom = "text", x = 25, y = -31, label = "earlier", color = "grey20") +

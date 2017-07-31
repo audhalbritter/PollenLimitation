@@ -66,11 +66,12 @@ SizeMeanData <- SizeMeanSE %>%
 
 LeafSizePlot <- SizeMeanData %>% 
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "LaterSM", "WarmLate"))) %>% 
-  ggplot(aes(x = smDiff, y = mean, color = Treatment, ymax = mean + se, ymin = mean - se)) +
+  ggplot(aes(x = smDiff, y = mean, color = Treatment, shape = Treatment, ymax = mean + se, ymin = mean - se)) +
   geom_hline(yintercept=0, color = "gray", linetype = "dashed") +
   geom_point(size = 3) +
   labs(y = "Difference in leaf size [cm] between\n treatment and origin-control", x = "Difference in SMT between\n origin and destination site [days]", title = "Phenotypic plasticity: origin-control") +
   scale_colour_manual(name = "Treatment", values = c("red", "blue", "purple")) +
+  scale_shape_manual(name = "Treatment:", values = c(17,16,15)) +
   ylim(-2.5, 3) +
   geom_errorbar(width=0.2) +
   panel_border(colour = "black", remove = FALSE) +
@@ -125,12 +126,13 @@ MeanDataAdapt <- MeanSEAdapt %>%
   
 LeafSizePlotAdapt <- MeanDataAdapt %>% 
   mutate(Pvalue = factor(1)) %>% 
-  ggplot(aes(x = smDiff, y = mean, color = Treatment, shape = Pvalue, ymax = mean + se, ymin = mean - se)) +
+  ggplot(aes(x = smDiff, y = mean, color = Treatment, shape = Treatment, ymax = mean + se, ymin = mean - se)) +
   geom_hline(yintercept=0, color = "gray", linetype = "dashed") +
   geom_point(size = 3) +
   labs(y = "Difference in leaf size [cm] between\n treatment and destination-control", x = "Difference in SMT between\n origin and destination site [days]", title = "Genetic differentiation: destination-control") +
   scale_colour_manual(values = c("red", "blue", "purple")) +
-  scale_shape_manual(values = c(1)) +
+  scale_shape_manual(name = "Treatment:", values = c(2,1,0)) +
+  #scale_alpha_manual(values = c(0, 1)) +
   ylim(-2.5, 3) +
   geom_errorbar(width=0.2) +
   panel_border(colour = "black", remove = FALSE) +
@@ -140,4 +142,4 @@ LeafSizePlotAdapt <- MeanDataAdapt %>%
 
 
 LeafSizes <- plot_grid(LeafSizePlot, LeafSizePlotAdapt, nrow = 1, align = "h")
-ggsave(LeafSizes, filename = "LeafSizes.pdf")
+ggsave(LeafSizes, filename = "LeafSizes.pdf", height = 6)
