@@ -9,7 +9,7 @@ library("readxl")
 #### 2015 DATA
 
 # Ranunculus
-data2015Ran <- read.csv("data_pollenlimitaiton_Sept16.csv", sep=";", stringsAsFactors = FALSE)
+data2015Ran <- read.csv("Data/2015/data_pollenlimitaiton_Sept16.csv", sep=";", stringsAsFactors = FALSE)
 
 data2015Ran <- data2015Ran %>% 
   as_tibble() %>% 
@@ -47,7 +47,7 @@ data2015 <- data2015 %>%
   
   
 #### 2017 DATA
-data2017 <- read_excel(path = "~/Dropbox/Pollen limitation/Data/PollinationDataSheet_2017.xlsx", sheet = 1, col_names = TRUE, col_types = c(rep("text", 6), rep("numeric", 2), "date", rep("text", 3), "date", "numeric", rep("date", 9), "numeric", "text"))
+data2017 <- read_excel(path = "Data/2017/INSERT_NAME_OF_DATA_FILE.xlsx", sheet = 1, col_names = TRUE, col_types = c(rep("text", 6), rep("numeric", 2), "date", rep("text", 3), "date", "numeric", rep("date", 9), "numeric", "text"))
 
 data2017 <- data2017 %>% 
   rename(Species = SP, Pollination = Treatment, InitDate2014 = date, InitDate = Date, InitSize2014 = initial_size, InitSize = `size_start [cm]`, EndDate = Date2, EndSize = `size_end [cm]`) %>%
