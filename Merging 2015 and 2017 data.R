@@ -47,23 +47,29 @@ data2015 <- data2015 %>%
   
   
 #### 2017 DATA
-data2017 <- read_excel(path = "Data/2017/INSERT_NAME_OF_DATA_FILE.xlsx", sheet = 1, col_names = TRUE, col_types = c(rep("text", 6), rep("numeric", 2), "date", rep("text", 3), "date", "numeric", rep("date", 9), "numeric", "text"))
+#data2017 <- read_excel(path = "Data/2017/INSERT_NAME_OF_DATA_FILE.xlsx", sheet = 1, col_names = TRUE, col_types = c(rep("text", 6), rep("numeric", 2), "date", rep("text", 3), "date", "numeric", rep("date", 9), "numeric", "text"))
+data2017 <- read.csv(file = "Data/2017/phenology.csv", header = TRUE, stringsAsFactors = FALSE)
+# replace N/A
+data2017[data2017 == "N/A"] <- NA
 
 data2017 <- data2017 %>% 
-  rename(Species = SP, Pollination = Treatment, InitDate2014 = date, InitDate = Date, InitSize2014 = initial_size, InitSize = `size_start [cm]`, EndDate = Date2, EndSize = `size_end [cm]`) %>%
-  mutate(InitDate2014 = yday(ymd(InitDate2014))) %>% 
-  mutate(InitDate = yday(ymd(InitDate))) %>% 
-  mutate(EndDate = yday(ymd(EndDate)),
-         Date_bs = yday(ymd(Date_bs)),
-         Date_bp = yday(ymd(Date_bp)),
-         Date_f = yday(ymd(Date_f)),
-         Date_s = yday(ymd(Date_s)),
-         Date_rs = yday(ymd(Date_rs)),
-         poll_1 = yday(ymd(poll_1)),
-         poll_2 = yday(ymd(poll_2)),
-         poll_3 = yday(ymd(poll_3)),
-         Year = 2017)
-
+  rename(Pollination = Treatment, InitDate = date, InitSize = `size_start..cm.`, EndDate = Date2, EndSize = `size_end..cm.`, Biomass = Wt, Flower2 = X2nd.flower) %>%
+  mutate(InitDate = yday(dmy(InitDate))) %>%
+  mutate(EndDate = yday(dmy(EndDate)),
+         Date_bs = yday(dmy(Date_bs)),
+         Date_bp = yday(dmy(Date_bp)),
+         Date_f = yday(dmy(Date_f)),
+         Date_s = yday(dmy(Date_s)),
+         Date_rs = yday(dmy(Date_rs)),
+         poll_1 = yday(dmy(poll_1)),
+         poll_2 = yday(dmy(poll_2)),
+         poll_3 = yday(dmy(poll_3)),
+         InitSize = as.numeric(InitSize),
+         EndSize = as.numeric(EndSize),
+         Growth = EndSize - InitSize,
+         Year = 2017) %>% 
+  select(-growth) %>% 
+  as_tibble()
 
 Snowmelt <- data_frame(Site = rep(c("GUD", "RAM", "SKJ", "VES"), 2),
                        Year = as.numeric(c(rep("2015", 4), rep("2017", 4))),
@@ -85,7 +91,7 @@ Pollination <- Treatment %>%
   mutate(days_smb = Date_bs - SM, days_smf = Date_f - SM, days_sms = Date_s - SM, days_smrs = Date_rs - SM) %>% 
   select(-Date_bs, -Date_f, -Date_s, -Date_rs) %>% 
   bind_rows(data2015Ran) %>% 
-  gather(key = pheno.stage, value = value, -Species, -Site, -Origin, -Treatment, -ID_old, -ID, -Block, -InitSize2014, -InitDate2014, -name, -weather, -InitDate, -InitSize, -poll_1, -poll_2, -poll_3, -EndDate, -EndSize, -remark2, -Year, -remark, -SM, -Pollination) %>%
+  gather(key = pheno.stage, value = value, days_smb, days_smf, days_sms, days_smrs) %>%
   filter(!is.na(value)) %>% 
   
   # Make Code nice
