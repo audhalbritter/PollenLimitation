@@ -1,0 +1,54 @@
+---
+title: "The evolution of plotting"
+author: "Aud Halbritter"
+date: "19.11.2016"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE, message = FALSE, warning = FALSE, fig.height = 6, fig.width = 8)
+knitr::read_chunk("Figures.R")
+
+```
+
+```{r loadPhenology}
+
+
+```
+
+```{r setTheme}
+th <- theme_bw(base_size = 14)
+
+```
+
+## Phenological measurements
+```{r, eval = TRUE}
+knitr::include_graphics("Curve.png")
+
+```
+
+## Design
+```{r, eval = TRUE, out.width=800, fig.retina = 1}
+knitr::include_graphics("FigMap.jpg")
+
+```
+
+## First plot - one by one
+```{r FirstTrial, eval = TRUE}
+
+```
+
+## Second plot- all toghether
+```{r SecondTrial, eval = TRUE}
+
+```
+
+## Difference Treatment - control
+```{r EffectSizePlot, eval = TRUE}
+
+```
+
+## Onset and duration of event
+```{r, eval = TRUE, out.width=850, fig.retina = 1}
+knitr::include_graphics("OnsetDurationEventPlotDOGS.jpeg")
+```
