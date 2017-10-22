@@ -1,3 +1,7 @@
+######################
+#### IMPORT  DATA ####
+######################
+
 ### 2015 and 2017 data
 ### LIBRARIES
 library("lubridate")
@@ -5,6 +9,8 @@ library("ggplot2")
 library("tidyverse")
 library("cowplot")
 library("readxl")
+
+pn <- . %>% print(n = Inf)
 
 #### 2015 DATA
 
