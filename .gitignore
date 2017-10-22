@@ -26,6 +26,7 @@ vignettes/*.pdf
 *.xls
 *.csv
 *.Rdata
+*.RData
 *.odb
 *.zip
 *.sql
@@ -47,4 +48,5 @@ vignettes/*.pdf
 *.html
 *.pdf
 *.jpeg
+*.jpg
 .my.cnf
