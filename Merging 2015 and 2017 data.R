@@ -2,11 +2,9 @@
 #### IMPORT  DATA ####
 ######################
 
-
 ### 2015 and 2017 data
 ### LIBRARIES
 library("lubridate")
-library("ggplot2")
 library("tidyverse")
 library("cowplot")
 library("readxl")
@@ -39,7 +37,7 @@ data2015Ran <- data2015Ran %>%
 Treatment <- data2015Ran %>% select(Site, Origin, Treatment) %>% distinct(Site, Origin, Treatment)
 
 # Leontodon
-data2015 <- read_excel(path = "~/Dropbox/Pollen limitation/Data/Pollen limitation 2015 DATA/DataSheet_2015_Nicola.xlsx", sheet = 1, col_names = FALSE, skip = 1)
+data2015 <- read_excel(path = "Data/2015/DataSheet_2015_Nicola.xlsx", sheet = 1, col_names = FALSE, skip = 1)
 
 colnames(data2015) <- c("Species", "Site", "Origin", "Pollination", "ID_old", "ID", "Block", "InitSize2014", "InitDate2014", "name", "weather", "InitDate", "InitSize", "Date_bs", "buds", "Date_bp", "bud_p", "Date_f", "flower", "Date_s", "seed", "Date_rs", "ripe_seed", "poll_1", "poll_2", "poll_3", "EndDate", "EndSize", "remark2")
 
@@ -54,13 +52,12 @@ data2015 <- data2015 %>%
   
   
 #### 2017 DATA
-#data2017 <- read_excel(path = "Data/2017/INSERT_NAME_OF_DATA_FILE.xlsx", sheet = 1, col_names = TRUE, col_types = c(rep("text", 6), rep("numeric", 2), "date", rep("text", 3), "date", "numeric", rep("date", 9), "numeric", "text"))
 data2017 <- read.csv(file = "Data/2017/phenology.csv", header = TRUE, stringsAsFactors = FALSE)
 # replace N/A
-data2017[data2017 == "N/A"] <- NA
+#data2017[data2017 == "N/A"] <- NA
 
 data2017 <- data2017 %>% 
-  rename(Pollination = Treatment, InitDate = date, InitSize = `size_start..cm.`, EndDate = Date2, EndSize = `size_end..cm.`, Biomass = Wt, Flower2 = X2nd.flower) %>%
+  rename(Species = species, Site = site, Origin = origin, Pollination = treatment, InitDate = date, InitSize = size_start_cm, Date_bs = date_bs, Date_bp = date_bp, Date_f = date_f, Date_s = date_s, Date_rs = date_rs, EndDate = date2, EndSize = size_end_cm, RepOutput = wt, RepOutput2 = X2nd_flower) %>%
   mutate(InitDate = yday(dmy(InitDate))) %>%
   mutate(EndDate = yday(dmy(EndDate)),
          Date_bs = yday(dmy(Date_bs)),
@@ -84,8 +81,9 @@ Snowmelt <- data_frame(Site = rep(c("GUD", "RAM", "SKJ", "VES"), 2),
   
 
 # MERGING 2015 AND 2017 DATA
-Pollination <- data2015 %>% 
-  bind_rows(data2017)
+Pollination <- data2017
+#Pollination <- data2015 %>% 
+  #bind_rows(data2017)
   
 # add metadata
 Pollination <- Treatment %>% 
@@ -157,8 +155,8 @@ EventDiff <- EventDiffData %>%
   filter(!is.na(mean))
 
 
-YearPlot <- EventDiff %>% 
-  filter(Species == "RAN", pheno.stage == "Bud") %>% 
+EventDiff %>% 
+  filter(Species == "RAN", pheno.stage == "Flower") %>% 
   left_join(SMDiff, by = c("Species", "Year", "Origin", "Treatment")) %>% 
   mutate(pheno.stage = factor(pheno.stage, levels = c("Bud", "Flower", "Seed"))) %>%
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
@@ -172,7 +170,9 @@ YearPlot <- EventDiff %>%
   #scale_fill_manual(name = "Year:", values = c("white", "red")) +
   labs(y = "", x = "", title = "") +
   geom_errorbar(width=0.18) +
-  geom_point(size = 4) +
+  geom_point(size = 4)
+
+#+
   #theme(legend.position="none") +
   panel_border(colour = "black", remove = FALSE) +
   annotate(geom = "text", x = 25, y = 13, label = "later", color = "grey20") +
