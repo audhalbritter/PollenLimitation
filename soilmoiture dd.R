@@ -46,3 +46,12 @@ ggplot(iButton, aes(x = Date, y = Value, colour = Block)) +
   geom_line() +
   facet_grid(Species ~ Site)
 
+load("DailyTemperature.Rdata")
+dailyT <- dailyTemperature %>% 
+  mutate(site = factor(site, levels = c("Skj", "Gud", "Lav", "Ulv", "Ves", "Ram", "Hog", "Alr", "Ovs", "Arh", "Vik", "Fau"))) %>% 
+  arrange(logger, site) %>% 
+  mutate(doy = yday(date), year = year(date))
+dailyT <- dailyTemperature
+mutate(site = factor(site, levels = c("Skj", "Gud", "Lav", "Ulv", "Ves", "Ram", "Hog", "Alr", "Ovs", "Arh", "Vik", "Fau"))) %>% 
+  arrange(logger, site)
+mutate(site = factor(site, levels = c("Skj", "Gud", "Lav", "Ulv", "Ves", "Ram", "Hog", "Alr", "Ovs", "Arh", "Vik", "Fau")))
