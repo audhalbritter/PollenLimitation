@@ -46,6 +46,9 @@ data2015 <- data2015 %>%
   filter(Species == "LEO") %>% # only Leontodon
   select(-buds, -bud_p, -flower, -seed, -ripe_seed) %>% 
   mutate(InitDate2014 = yday(ymd(InitDate2014)),
+         InitSize = as.numeric(InitSize),
+         poll_1 = as.numeric(poll_1),
+         poll_2 = as.numeric(poll_2),
          poll_3 = as.numeric(poll_3),
          EndSize = as.numeric(EndSize),
          Year = 2015)
