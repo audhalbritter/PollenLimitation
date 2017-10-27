@@ -37,9 +37,9 @@ data2015Ran <- data2015Ran %>%
 Treatment <- data2015Ran %>% select(Site, Origin, Treatment) %>% distinct(Site, Origin, Treatment)
 
 # Leontodon
-data2015 <- read_excel(path = "Data/2015/DataSheet_2015_Nicola.xlsx", sheet = 1, col_names = FALSE, skip = 1)
+data2015 <- read_excel(path = "Data/2015/DataSheet_2015_Nicola.xlsx", col_names = TRUE, sheet = 1)
 
-colnames(data2015) <- c("Species", "Site", "Origin", "Pollination", "ID_old", "ID", "Block", "InitSize2014", "InitDate2014", "name", "weather", "InitDate", "InitSize", "Date_bs", "buds", "Date_bp", "bud_p", "Date_f", "flower", "Date_s", "seed", "Date_rs", "ripe_seed", "poll_1", "poll_2", "poll_3", "EndDate", "EndSize", "remark2")
+colnames(data2015) <- c("Species", "Site", "Origin", "Pollination", "ID_old", "ID", "Block", "InitSize2014", "InitDate2014", "name", "weather", "remark", "InitDate", "InitSize", "Date_bs", "buds", "Date_bp", "bud_p", "Date_f", "flower", "Date_s", "seed", "Date_rs", "ripe_seed", "poll_1", "poll_2", "poll_3", "EndDate", "EndSize", "remark2")
 
 
 data2015 <- data2015 %>% 
@@ -49,15 +49,14 @@ data2015 <- data2015 %>%
          poll_3 = as.numeric(poll_3),
          EndSize = as.numeric(EndSize),
          Year = 2015)
+
   
   
 #### 2017 DATA
 data2017 <- read.csv(file = "Data/2017/phenology.csv", header = TRUE, stringsAsFactors = FALSE)
-# replace N/A
-#data2017[data2017 == "N/A"] <- NA
 
 data2017 <- data2017 %>% 
-  rename(Species = species, Site = site, Origin = origin, Pollination = treatment, InitDate = date, InitSize = size_start_cm, Date_bs = date_bs, Date_bp = date_bp, Date_f = date_f, Date_s = date_s, Date_rs = date_rs, EndDate = date2, EndSize = size_end_cm, RepOutput = wt, RepOutput2 = X2nd_flower) %>%
+  rename(Species = species, Site = site, Origin = origin, Pollination = treatment, InitDate = date, InitSize = size_start_cm, Date_bs = date_bs, Date_bp = date_bp, Date_f = date_f, Date_s = date_s, Date_rs = date_rs, EndDate = date2, EndSize = size_end_cm, RepOutput = wt, NrFlowers = flowers, RepOutput2 = X2nd_flower) %>%
   mutate(InitDate = yday(dmy(InitDate))) %>%
   mutate(EndDate = yday(dmy(EndDate)),
          Date_bs = yday(dmy(Date_bs)),
@@ -71,6 +70,7 @@ data2017 <- data2017 %>%
          InitSize = as.numeric(InitSize),
          EndSize = as.numeric(EndSize),
          Growth = EndSize - InitSize,
+         Flowering = ifelse(NrFlowers > 0, 1, 0),
          Year = 2017) %>% 
   select(-growth) %>% 
   as_tibble()
@@ -81,9 +81,8 @@ Snowmelt <- data_frame(Site = rep(c("GUD", "RAM", "SKJ", "VES"), 2),
   
 
 # MERGING 2015 AND 2017 DATA
-Pollination <- data2017
-#Pollination <- data2015 %>% 
-  #bind_rows(data2017)
+Pollination <- data2015 %>% 
+  bind_rows(data2017)
   
 # add metadata
 Pollination <- Treatment %>% 
