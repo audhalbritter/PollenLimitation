@@ -1,7 +1,9 @@
+library("readxl")
+
 data <- read.csv("data_pollenlimitaiton_Sept16.csv", sep=";")
 head(data)
 
-data2017 <- read_excel("PollinationDataSheet_2017.xlsx", sheet = 1, col_names = TRUE)
+data2017 <- read_excel(path = "~/Dropbox/Pollen limitation/Data/PollinationDataSheet_2017.xlsx", sheet = 1, col_names = TRUE, col_types = c(rep("text", 6), rep("numeric", 2), "date", rep("text", 3), "date", "numeric", rep("date", 9), "numeric", "text"))
 head(data2017)
 
 ### LIBRARIES
@@ -202,18 +204,11 @@ newdat
 
 
 
-
-data2017 <- data2017 %>% 
-  mutate(Date_bs = yday(dmy(Date_bs))) %>% 
-  mutate(Date_bp = yday(dmy(Date_bp))) %>% 
-  mutate(Date_f = yday(dmy(Date_f))) %>% 
-  mutate(Date_s = yday(dmy(Date_s))) %>% 
-  mutate(Date_rs = yday(dmy(Date_rs)))
   
 
 data2017 %>% 
-  filter(SP == "RAN") %>% 
+  filter(Species == "RAN") %>% 
   ggplot() +
-  geom_boxplot(aes(x= Origin, y = Date_bs)) +
+  geom_boxplot(aes(x= Origin, y = Date_bp)) +
   scale_fill_manual(values=c("white", "red", "blue", "purple")) +
   facet_wrap(~ Site)
