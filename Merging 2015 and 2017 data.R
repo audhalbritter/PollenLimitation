@@ -11,7 +11,7 @@ library("readxl")
 
 pn <- . %>% print(n = Inf)
 
-#### 2015 DATA
+#### 2015 DATA ####
 
 # Ranunculus
 data2015Ran <- read.csv("Data/2015/data_pollenlimitaiton_Sept16.csv", sep=";", stringsAsFactors = FALSE)
@@ -33,8 +33,25 @@ data2015Ran <- data2015Ran %>%
   mutate(Treatment = factor(Treatment, levels = c("Control", "Warmer", "LaterSM", "WarmLate"))) %>% 
   mutate(Year = 2015)
 
+
+### META DATA
+# T and P levels
+TPLevels <- data_frame(Site = c("GUD", "RAM", "SKJ", "VES"),
+           TempLevel = c(5.87, 8.77, 6.58, 8.67),
+           PrecLevel = c(1925, 1848, 2725, 3029))
+
 # meta data site, origin and treatment
-Treatment <- data2015Ran %>% select(Site, Origin, Treatment) %>% distinct(Site, Origin, Treatment)
+Treatment <- data2015Ran %>% 
+  select(Site, Origin, Treatment) %>% 
+  distinct(Site, Origin, Treatment) %>% 
+  # destination  
+  left_join(TPLevels, by = "Site") %>% 
+  rename(DestTLevel = TempLevel, DestPLevel = PrecLevel) %>% 
+  # origin  
+  left_join(TPLevels, by = c("Origin" = "Site")) %>% 
+  rename(OrigTLevel = TempLevel, OrigPLevel = PrecLevel)
+  
+
 
 # Leontodon
 data2015 <- read_excel(path = "Data/2015/DataSheet_2015_Nicola.xlsx", col_names = TRUE, sheet = 1)
@@ -59,7 +76,7 @@ data2015 <- data2015 %>%
 data2017 <- read.csv(file = "Data/2017/phenology.csv", header = TRUE, stringsAsFactors = FALSE)
 
 data2017 <- data2017 %>% 
-  rename(Species = species, Site = site, Origin = origin, Pollination = treatment, InitDate = date, InitSize = size_start_cm, Date_bs = date_bs, Date_bp = date_bp, Date_f = date_f, Date_s = date_s, Date_rs = date_rs, EndDate = date2, EndSize = size_end_cm, RepOutput = wt, NrFlowers = flowers, RepOutput2 = X2nd_flower) %>%
+  rename(Species = species, Site = site, Origin = origin, Block = block, Pollination = treatment, InitDate = date, InitSize = size_start_cm, Date_bs = date_bs, Date_bp = date_bp, Date_f = date_f, Date_s = date_s, Date_rs = date_rs, EndDate = date2, EndSize = size_end_cm, RepOutput = wt, NrFlowers = flowers, RepOutput2 = X2nd_flower) %>%
   mutate(InitDate = yday(dmy(InitDate))) %>%
   mutate(EndDate = yday(dmy(EndDate)),
          Date_bs = yday(dmy(Date_bs)),
@@ -99,7 +116,6 @@ Pollination <- Treatment %>%
   select(-Date_bs, -Date_f, -Date_s, -Date_rs) %>% 
   bind_rows(data2015Ran) %>% 
   gather(key = pheno.stage, value = value, days_smb, days_smf, days_sms, days_smrs) %>%
-  filter(!is.na(value)) %>% 
   
   # Make Code nice
   mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("days_smb", "days_smf", "days_sms", "days_smrs"), c("Bud", "Flower", "Seed", "Ripe Seed"))) %>% 
@@ -109,3 +125,28 @@ Pollination <- Treatment %>%
   #mutate(doy = ifelse(pheno.unit == "doy", value, ifelse(pheno.unit == "dogs", (value + sm), NA))) %>% # get doy for each observation
   #left_join(climateData, by = c("site" = "site", "doy" = "doy")) %>% 
   #mutate(CumTempAfterSM = ifelse(pheno.unit == "days", NA, CumTempAfterSM)) # does not make sense for durations
+
+
+# Add NewBlock
+# RAN: GUD 1-3; RAM: 4-5; SKJ: 6-7; VES: 8-9: GUD: change ind in blocks 1-3!
+# LEO: GUD 1-4; RAM: 5-8; SKJ: 9-12; VES: 13-18
+
+MetaNewBlock <- data_frame(Species = c(rep("LEO", 18), rep("RAN", 9)),
+                       Site = c(rep("GUD", 4), rep("RAM", 4), rep("SKJ", 4), rep("VES", 6), rep("GUD", 3), rep("RAM", 2), rep("SKJ", 2), rep("VES", 2)),
+                       Block = c(rep(1:4, 3), 1:6, 1:3, rep(1:2, 3)),
+                       NewBlock = c(1:18, 1:9))
+
+MetaNewBlockGUD <- data_frame(Species = rep("RAN", 30),
+                          Site = rep("GUD", 30),
+                          Block = c(rep(1, 10), rep(2, 10), rep(3, 10)),
+                          ID = c("G_C_1", "G_C_4", "G_P_1", "G_P_4", "G_P_2", "G_C_5", "G_C_3", "G_P_5", "G_C_2", "G_P_3",
+                                 "G_C_3", "G_P_4", "G_P_3", "G_P_1", "G_P_2", "G_C_1", "G_C_4", "G_C_2", "G_P_5", "G_C_5",
+                                 "G_C_4", "G_C_3", "G_P_2", "G_P_4", "G_C_5", "G_P_3", "G_C_2", "G_C_1", "G_P_1", "G_P_5"),
+                          NewBlockGUD = c(rep(1, 4), rep(2, 3), rep(3, 3), rep(1, 3), rep(2, 4), rep(3, 3), rep(1, 3), rep(2, 3), rep(3, 4)))
+
+Pollination <- Pollination %>% 
+  left_join(MetaNewBlock, by = c("Species", "Site", "Block")) %>% 
+  left_join(MetaNewBlockGUD, by = c("Species", "Site", "Block", "ID")) %>% 
+  mutate(NewBlock = ifelse(Species == "RAN" & Site == "GUD", NewBlockGUD, NewBlock)) %>% 
+  select(-NewBlockGUD)
+
