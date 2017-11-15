@@ -4,7 +4,6 @@
 
 ### LIBRARIES
 library("lubridate")
-library("ggplot2")
 library("tidyverse")
 library("cowplot")
 library("readxl")
@@ -64,48 +63,71 @@ ggplot(iButton, aes(x = Date, y = Value, colour = Block)) +
   facet_grid(Species ~ Site)
 
 
-#### CALCULATE CUMSUM FOR EACH LOGGER ####
-
+#### CLLIMATE DATA SEEDCLIM ####
 # Load daily temperature data
-load("DailyTemperature.Rdata")
+load(file = "~/Dropbox/Bergen/SeedClim Climate/SeedClim-Climate-Data/Temperature.Rdata", verbose = TRUE)
 
-# Rearange temperature data
-dailyT <- dailyTemperature %>% 
-  mutate(site = factor(site, levels = c("Skj", "Gud", "Lav", "Ulv", "Ves", "Ram", "Hog", "Alr", "Ovs", "Arh", "Vik", "Fau"))) %>% 
-  arrange(logger, site) %>% 
-  mutate(doy = yday(date), year = year(date))
+# Calculate daily min, mean and max values for 2017
+dailyTemp <- temperature %>% 
+  # calculate daily values
+  mutate(year = year(date), date = ymd(format(date, "%Y.%b.%d")), doy = yday(date)) %>%
+  filter(year == 2017) %>% 
+  group_by(logger, year, date, site) %>%
+  summarise(n = n(), mean = mean(value, na.rm = TRUE), min = min(value, na.rm = TRUE), max = max(value, na.rm = TRUE)) %>% 
+  filter(n > 18)
+
+  
+# Filling gaps for daily mean, min and max values
+lav <- dailyTemp %>% 
+  select(-n) %>% 
+  spread(key = logger, value = mean)
+  filter(site == "Lav")
+
+lm(temp30cm ~ temp200cm + tempabove + tempsoil, data = lav)
+
+dailyTemp %>% 
+  ggplot(aes(x = date, y = tempsoil)) +
+  geom_point() +
+  facet_wrap(~ site)
+
+temp30 %>% 
+  filter(site == "Gud", year(date) ==  "2012") %>% 
+  ggplot(aes(x = date, y = mean)) +
+  geom_smooth(method = "gam", formula = y ~ poly(x, 4)) +
+  geom_line()
 
 
-#### calcualte cumsum #### 
-climateData <- dailyT %>% 
-  filter(site %in% c("Skj", "Gud", "Ves", "Ram")) %>% 
-  mutate(site = plyr::mapvalues(site, from = c("Skj", "Gud", "Ves", "Ram"), to = c("SKJ", "GUD", "VES", "RAM"))) %>% 
-  filter(date > (ymd("2015.1.1")), date < (ymd("2015.12.31"))) %>%
-  filter(logger == "temp30cm") %>% 
-  mutate(temp = replace(value, is.na(value), 0)) %>%  # replace NA by zero
-  mutate(temp = replace(value, value < 5, 0)) %>%
-  # include snowmelt date
-  mutate(TempAfterSM = ifelse(site == "RAM", replace(temp, doy < 167, 0),
-         ifelse(site == "GUD", replace(temp, doy < 184, 0),
-                ifelse(site == "SKJ", replace(temp, doy < 224, 0),
-                       ifelse(site == "VES", replace(temp, doy < 174, 0), temp))))) %>% 
-  group_by(site) %>% 
-  mutate(CumTempAfterSM = cumsum(TempAfterSM)) %>%
-  select(site, doy, CumTempAfterSM)
-  
-  
-  
-  ggplot(aes(x = date, y = cumTemp)) +
-  geom_line() +
-  facet_wrap(~site)
+fit <- loess(mean ~ doy, data = temp30, span = 0.5, degree = 2)
+fit2 <- lm(mean ~ doy + I(doy^2) + I(doy^3), data = temp30)
+summary(fit)
 
-head(climateData)
+new.dat <- data.frame(doy = seq(min(temp30$doy), max(temp30$doy), length.out = 365))
+new.dat$pred <- predict(fit2, new.dat)
+plot(temp30$doy, temp30$mean)
+with(new.dat, lines(x = doy, y = pred, col = "red"))
 
-dailyT %>% 
-  filter(logger == "temp30cm", date >= "2015-06-01" & date <= "2015-08-31") %>% 
-  group_by(site) %>% 
-  summarise(mean(value))
-  
-head(Ranunculus)
-Ranunculus %>% filter(trt == "Wetter", pheno.stage == "Fruit")
-  
+
+
+#### CALCULATE CUMSUM FOR EACH LOGGER ####
+# extracting 2015 and 2017 data from the 4 sites
+climate <- dailyTemp %>% 
+  filter(year(date) %in% c("2017"), site %in% c("Gud", "Ram", "Skj", "Ves")) %>% ## ADD 2015 again!!! 
+  filter(logger == "tempabove") %>%
+  mutate(site = plyr::mapvalues(site, c("Gud", "Ram", "Skj", "Ves"), c("GUD", "RAM", "SKJ", "VES"))) %>% 
+  mutate(doy = yday(date)) %>% 
+  left_join(Snowmelt, by = c("year" = "Year", "site" = "Site")) %>% 
+  # replace mean, min and max with 0 until SM
+  mutate(mean = ifelse(doy < SM, 0, mean)) %>% 
+  mutate(min = ifelse(doy < SM, 0, min)) %>% 
+  mutate(max = ifelse(doy < SM, 0, max)) %>% 
+  select(-n) %>% 
+  gather(key = measure, value = value, mean, min, max) %>% 
+  # Calculate Cumsum for each site and measure (min, max, mean) 
+  group_by(site, measure) %>% 
+  mutate(CumTempAfterSM = cumsum(value)) %>% 
+  spread(key = measure, value = CumTempAfterSM) %>% 
+  rename(MaxTempSumAfterSM = max, MeanTempSumAfterSM = mean, MinTempSumAfterSM = min) %>% 
+  select(year, site, doy, MaxTempSumAfterSM, MeanTempSumAfterSM, MinTempSumAfterSM)
+
+
+
