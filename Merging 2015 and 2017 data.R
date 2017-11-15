@@ -37,8 +37,8 @@ data2015Ran <- data2015Ran %>%
 ### META DATA
 # T and P levels
 TPLevels <- data_frame(Site = c("GUD", "RAM", "SKJ", "VES"),
-           TempLevel = c(5.87, 8.77, 6.58, 8.67),
-           PrecLevel = c(1925, 1848, 2725, 3029))
+           TempLevel = c(6.5, 8.5, 6.5, 8.5),
+           PrecLevel = c(2000, 2000, 2700, 2700))
 
 # meta data site, origin and treatment
 Treatment <- data2015Ran %>% 
