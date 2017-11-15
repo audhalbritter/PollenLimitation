@@ -1,4 +1,4 @@
-
+#### 2015 DATA
 
 ## ----EventDiffPlot
 ### PLOT FOR ONSET OF STAGE BETWEEN TREATMENT AND CONTROL - PLASTICITY
@@ -34,7 +34,7 @@ EventDiffData <- Ranunculus %>%
   mutate(orig = plyr::mapvalues(orig, c("GUD", "RAM", "SKJ"), c("Alpine-early", "Subalpine-early", "Alpine-late"))) %>%
   mutate(orig = factor(orig, levels = c("Alpine-early", "Alpine-late", "Subalpine-early"))) %>%
   group_by(trt, site, orig, pheno.stage, pheno.unit) %>% 
-  summarise(N = sum(!is.na(value)), mean = mean(value, na.rm = TRUE), se = sd(value, na.rm = TRUE)/sqrt(N))
+  summarise(N = sum(!is.na(value)), mean = mean(value, na.rm = TRUE), se = sd(value, na.rm = TRUE)/sqrt(N)) %>% filter(pheno.unit == "dogs", trt == "Control")
 
 EventDiff <- EventDiffData %>% 
   ungroup(site) %>% 
@@ -82,7 +82,7 @@ ann_text1 <- data.frame(x = c(5,5), y = c(13, -25), lab = c("late", "early"),
                         pheno.stage = factor("Fruit",levels = c("Bud","Flower","Fruit")))
 
 EventDiffPlot <- EventDiff %>% 
-  filter(pheno.stage %in% c("Bud", "Flower", "Fruit")) %>% 
+  filter(pheno.stage %in% c("Bud", "Flower", "Fruit")) %>% # select dogs
   left_join(EventDiffN, by = c("orig", "pheno.stage", "pheno.unit", "Treatment")) %>%
   left_join(SMDiff, by = c("orig", "Treatment")) %>% 
   mutate(newname = plyr::mapvalues(newname, c("early", "late", "alpine", "subalpine", "early & alpine"), c("Early SM", "Late SM", "Cold", "Warm", "Early SM & cold"))) %>%
