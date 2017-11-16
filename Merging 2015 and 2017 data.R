@@ -115,16 +115,12 @@ Pollination <- Treatment %>%
   mutate(days_smb = Date_bs - SM, days_smf = Date_f - SM, days_sms = Date_s - SM, days_smrs = Date_rs - SM) %>% 
   select(-Date_bs, -Date_f, -Date_s, -Date_rs) %>% 
   bind_rows(data2015Ran) %>% 
-  gather(key = pheno.stage, value = value, days_smb, days_smf, days_sms, days_smrs) %>%
+  gather(key = Variable, value = value, days_smb, days_smf, days_sms, days_smrs, InitSize, EndSize, RepOutput, Growth) %>%
+  mutate(Flowering = factor(Flowering)) %>% 
   
   # Make Code nice
-  mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("days_smb", "days_smf", "days_sms", "days_smrs"), c("Bud", "Flower", "Seed", "Ripe Seed"))) %>% 
+  mutate(Variable = plyr::mapvalues(Variable, c("days_smb", "days_smf", "days_sms", "days_smrs", "InitSize", "EndSize", "RepOutput", "Growth"), c("Bud", "Flower", "Seed", "Ripe Seed", "InitSize", "EndSize", "RepOutput", "Growth"))) %>% 
   mutate(Treatment = factor(Treatment, levels = c("Control", "Warmer", "LaterSM", "WarmLate")))
-  
-  # Cumulative Temperature after snowmelt
-  #mutate(doy = ifelse(pheno.unit == "doy", value, ifelse(pheno.unit == "dogs", (value + sm), NA))) %>% # get doy for each observation
-  #left_join(climateData, by = c("site" = "site", "doy" = "doy")) %>% 
-  #mutate(CumTempAfterSM = ifelse(pheno.unit == "days", NA, CumTempAfterSM)) # does not make sense for durations
 
 
 # Add NewBlock
@@ -150,3 +146,5 @@ Pollination <- Pollination %>%
   mutate(NewBlock = ifelse(Species == "RAN" & Site == "GUD", NewBlockGUD, NewBlock)) %>% 
   select(-NewBlockGUD)
 
+# 2015 data: get Flower no-flower, biomass, rep output, nr flower
+# FIX FLOWERING, ALL PLANTS WITH BIOMASS, SHOULD HAVE FLOWERING 0 AND REP OUTPUT SHOULD NOT BE NA
