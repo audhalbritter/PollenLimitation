@@ -73,10 +73,10 @@ data2015 <- data2015 %>%
   
   
 #### 2017 DATA
-data2017 <- read.csv(file = "Data/2017/phenology.csv", header = TRUE, stringsAsFactors = FALSE)
+data2017 <- read.csv(file = "Data/2017/17-11-18_phenology.csv", header = TRUE, sep = ";", stringsAsFactors = FALSE)
 
 data2017 <- data2017 %>% 
-  rename(Species = species, Site = site, Origin = origin, Block = block, Pollination = treatment, InitDate = date, InitSize = size_start_cm, Date_bs = date_bs, Date_bp = date_bp, Date_f = date_f, Date_s = date_s, Date_rs = date_rs, EndDate = date2, EndSize = size_end_cm, RepOutput = wt, NrFlowers = flowers, RepOutput2 = X2nd_flower) %>%
+  rename(Species = SP, Pollination = Treatment, InitDate = Date, InitSize = size_start..cm., EndDate = Date2 , EndSize = size_end..cm., RepOutput = Wt, NrFlowers = flowers, RepOutput2 = X2nd.flower) %>%
   mutate(InitDate = yday(dmy(InitDate))) %>%
   mutate(EndDate = yday(dmy(EndDate)),
          Date_bs = yday(dmy(Date_bs)),
@@ -89,6 +89,9 @@ data2017 <- data2017 %>%
          poll_3 = yday(dmy(poll_3)),
          InitSize = as.numeric(InitSize),
          EndSize = as.numeric(EndSize),
+         NrFlowers = as.numeric(NrFlowers),
+         RepOutput = as.numeric(RepOutput),
+         RepOutput2 = as.numeric(RepOutput2),
          Growth = EndSize - InitSize,
          Flowering = ifelse(NrFlowers > 0, 1, 0),
          Year = 2017) %>% 
