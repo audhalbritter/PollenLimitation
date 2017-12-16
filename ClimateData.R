@@ -71,23 +71,50 @@ load(file = "~/Dropbox/Bergen/SeedClim Climate/SeedClim-Climate-Data/Temperature
 dailyTemp <- temperature %>% 
   # calculate daily values
   mutate(year = year(date), date = ymd(format(date, "%Y.%b.%d")), doy = yday(date)) %>%
-  filter(year == 2017) %>% 
+  filter(year %in% c(2015, 2017)) %>% 
   group_by(logger, year, date, site) %>%
   summarise(n = n(), mean = mean(value, na.rm = TRUE), min = min(value, na.rm = TRUE), max = max(value, na.rm = TRUE)) %>% 
   filter(n > 18)
 
   
 # Filling gaps for daily mean, min and max values
-lav <- dailyTemp %>% 
-  select(-n) %>% 
-  spread(key = logger, value = mean)
-  filter(site == "Lav")
 
-lm(temp30cm ~ temp200cm + tempabove + tempsoil, data = lav)
+
+
+fit200 <- lm(temp200cm ~ temp30cm + tempabove + tempsoil, data = lav)
+fit30 <- lm(temp30cm ~ temp200cm + tempabove + tempsoil + site, data = MeanT)
+fitabove <- lm(tempabove ~ tempsoil + site, data = MeanT)
+fitsoil <- lm(tempsoil ~ temp200cm + temp30cm + tempabove + site, data = MeanT)
+summary(fitabove)
+plot(fit200)
+
+dat <- lav
+
+PredictMissingTempData <- function(dat){
+  fit <- lm(tempabove ~ temp30cm + temp200cm, data = dat2)
+  new.dat <- data.frame(temp200cm = dat$temp200cm)
+  new.dat$pred <- predict(fit, new.dat)
+  new.dat$pred
+  res <- data_frame(date = dat$date,
+                    pred = new.dat$pred)
+  return(res)
+}
+
+# Run function to predict peak flower
+dailyTemp %>% 
+  select(-n, -min, -max) %>% 
+  spread(key = logger, value = mean) %>% 
+  group_by(site) %>%
+  filter(!is.na(temp30cm)) %>% 
+  do(PredictMissingTempData(.))
+
+
+
 
 dailyTemp %>% 
-  ggplot(aes(x = date, y = tempsoil)) +
-  geom_point() +
+  filter(year == 2017, site %in% c("Gud", "Skj", "Ves", "Ram"), logger == "temp30cm") %>% 
+  ggplot(aes(x = date, y = mean)) +
+  geom_line() +
   facet_wrap(~ site)
 
 temp30 %>% 
