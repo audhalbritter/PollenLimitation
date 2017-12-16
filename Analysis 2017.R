@@ -1,4 +1,104 @@
 ### ANALYSIS ###
+
+# load the data
+source("Mergin 2015 and 2017 data.R")
+
+#***************************************************************************************
+#### PLASTICITY ####
+## WARMER - Flowering date for Leontodon ##
+dat <- Pollination %>% 
+  filter(Species == "LEO", Variable == "Flower") %>% 
+  # remove Control plants at Veskre, because they are not needed for the plasticity question
+  filter(Origin != "VES" | Treatment != "Control") %>%  
+  # select only controls and warmer
+  filter(Treatment %in% c("Control", "Warmer")) %>% 
+  filter(!is.na(value)) # remove NAs
+  
+# fit dimple glm
+fit <- glm(value ~ Treatment * OrigPLevel, data = dat, family = "poisson")
+summary(fit)
+### IMPORTANT ###
+# - you need to check if model assumptions are met for each of these models
+# - because these are poisson model, you need to check if they are over disperesd.
+
+  
+## WETTER - Flowering date for Leontodon ##
+dat <- Pollination %>% 
+  filter(Species == "LEO", Variable == "Flower") %>% 
+  # remove Control plants at Veskre, because they are not needed for the plasticity question
+  filter(Origin != "VES" | Treatment != "Control") %>%  
+  # select only controls and warmer
+  filter(Treatment %in% c("Control", "LaterSM")) %>% 
+  filter(!is.na(value)) # remove NAs
+
+# fit dimple glm
+fit <- glm(value ~ Treatment * OrigTLevel, data = dat, family = "poisson")
+summary(fit)
+  
+## WARM AND WET - Flowering date for Leontodon ##
+dat <- Pollination %>% 
+  filter(Species == "LEO", Variable == "Flower") %>% 
+  # remove Control plants at Veskre, because they are not needed for the plasticity question
+  filter(Origin != "VES" | Treatment != "Control") %>%  
+  # select only controls and warmer
+  filter(Treatment %in% c("Control", "WarmLate")) %>% 
+  filter(!is.na(value)) # remove NAs
+
+# fit dimple glm
+fit <- glm(value ~ Treatment, data = dat, family = "poisson")
+summary(fit)
+
+
+#***************************************************************************************
+#### ADAPTATION ####
+## WARMER - Flowering date for Leontodon ##
+dat <- Pollination %>% 
+  filter(Species == "LEO", Variable == "Flower") %>% 
+  # remove Control plants at Gudmedalen, because they are not needed for the adaptation question
+  filter(Origin != "GUD" | Treatment != "Control") %>%  
+  # select only controls and warmer
+  filter(Treatment %in% c("Control", "Warmer")) %>% 
+  filter(!is.na(value)) # remove NAs
+
+# fit dimple glm
+fit <- glm(value ~ Treatment * OrigPLevel, data = dat, family = "poisson")
+summary(fit)
+
+
+
+## WETTER - Flowering date for Leontodon ##
+dat <- Pollination %>% 
+  filter(Species == "LEO", Variable == "Flower") %>% 
+  # remove Control plants at Gudmedalen, because they are not needed for the adaptation question
+  filter(Origin != "GUD" | Treatment != "Control") %>%  
+  # select only controls and warmer
+  filter(Treatment %in% c("Control", "LaterSM")) %>% 
+  filter(!is.na(value)) # remove NAs
+
+# fit dimple glm
+fit <- glm(value ~ Treatment * OrigTLevel, data = dat, family = "poisson")
+summary(fit)
+
+
+## WARM AND WET - Flowering date for Leontodon ##
+dat <- Pollination %>% 
+  filter(Species == "LEO", Variable == "Flower") %>% 
+  # remove Control plants at Gudmedalen, because they are not needed for the adaptation question
+  filter(Origin != "GUD" | Treatment != "Control") %>%  
+  # select only controls and warmer
+  filter(Treatment %in% c("Control", "WarmLate")) %>% 
+  filter(!is.na(value)) # remove NAs
+
+# fit dimple glm
+fit <- glm(value ~ Treatment, data = dat, family = "poisson")
+summary(fit)
+
+
+
+
+#***************************************************************************************
+
+#### MORE COMPLICATED MODELS; NOT NEEDED FOR NOW
 library("lme4")
 library("MuMIn")
 
@@ -30,5 +130,8 @@ dat2 <- dat %>%
 
 fit <- glmer(value ~ Treatment + OrigPLevelRescale + OrigTLevelRescale + Treatment:OrigPLevelRescale + Treatment:OrigTLevelRescale + (1|NewBlock), data = dat2, family = "poisson")
 summary(fit)
+
+
+
 
 
