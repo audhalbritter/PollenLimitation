@@ -9,7 +9,8 @@ source("Mergin 2015 and 2017 data.R")
 dat <- Pollination %>% 
   filter(Species == "LEO", Variable == "Flower") %>% 
   # remove Control plants at Veskre, because they are not needed for the plasticity question
-  filter(Origin != "VES" | Treatment != "Control") %>%  
+  filter(Origin != c("VES") | Treatment != "Control") %>%  
+  filter(Origin != c("RAM") | Treatment != "Control") %>%  
   # select only controls and warmer
   filter(Treatment %in% c("Control", "Warmer")) %>% 
   filter(!is.na(value)) # remove NAs
@@ -25,8 +26,9 @@ summary(fit)
 ## WETTER - Flowering date for Leontodon ##
 dat <- Pollination %>% 
   filter(Species == "LEO", Variable == "Flower") %>% 
-  # remove Control plants at Veskre, because they are not needed for the plasticity question
+  # remove Control plants at Veskre and Skj
   filter(Origin != "VES" | Treatment != "Control") %>%  
+  filter(Origin != "SKJ" | Treatment != "Control") %>%  
   # select only controls and warmer
   filter(Treatment %in% c("Control", "LaterSM")) %>% 
   filter(!is.na(value)) # remove NAs
@@ -38,8 +40,10 @@ summary(fit)
 ## WARM AND WET - Flowering date for Leontodon ##
 dat <- Pollination %>% 
   filter(Species == "LEO", Variable == "Flower") %>% 
-  # remove Control plants at Veskre, because they are not needed for the plasticity question
+  # we only want Control plants at Gudmedalen
   filter(Origin != "VES" | Treatment != "Control") %>%  
+  filter(Origin != "RAM" | Treatment != "Control") %>%  
+  filter(Origin != "SKJ" | Treatment != "Control") %>%  
   # select only controls and warmer
   filter(Treatment %in% c("Control", "WarmLate")) %>% 
   filter(!is.na(value)) # remove NAs
@@ -54,8 +58,9 @@ summary(fit)
 ## WARMER - Flowering date for Leontodon ##
 dat <- Pollination %>% 
   filter(Species == "LEO", Variable == "Flower") %>% 
-  # remove Control plants at Gudmedalen, because they are not needed for the adaptation question
+  # remove Control plants at Gudmedalen and Skj, because they are not needed for the adaptation question
   filter(Origin != "GUD" | Treatment != "Control") %>%  
+  filter(Origin != "SKJ" | Treatment != "Control") %>%  
   # select only controls and warmer
   filter(Treatment %in% c("Control", "Warmer")) %>% 
   filter(!is.na(value)) # remove NAs
@@ -69,8 +74,9 @@ summary(fit)
 ## WETTER - Flowering date for Leontodon ##
 dat <- Pollination %>% 
   filter(Species == "LEO", Variable == "Flower") %>% 
-  # remove Control plants at Gudmedalen, because they are not needed for the adaptation question
+  # remove Control plants at Gudmedalen and Ram
   filter(Origin != "GUD" | Treatment != "Control") %>%  
+  filter(Origin != "RAM" | Treatment != "Control") %>%  
   # select only controls and warmer
   filter(Treatment %in% c("Control", "LaterSM")) %>% 
   filter(!is.na(value)) # remove NAs
@@ -83,10 +89,12 @@ summary(fit)
 ## WARM AND WET - Flowering date for Leontodon ##
 dat <- Pollination %>% 
   filter(Species == "LEO", Variable == "Flower") %>% 
-  # remove Control plants at Gudmedalen, because they are not needed for the adaptation question
+  # remove Control plants at Gudmedalen, Skj and Ram
   filter(Origin != "GUD" | Treatment != "Control") %>%  
+  filter(Origin != "SKJ" | Treatment != "Control") %>%  
+  filter(Origin != "RAM" | Treatment != "Control") %>%  
   # select only controls and warmer
-  filter(Treatment %in% c("Control", "WarmLate")) %>% 
+  filter(Treatment %in% c("Control", "WarmLate")) %>%
   filter(!is.na(value)) # remove NAs
 
 # fit dimple glm
