@@ -1,7 +1,7 @@
 ### ANALYSIS ###
 
 # load the data
-source("Mergin 2015 and 2017 data.R")
+source("Merging 2015 and 2017 data.R")
 
 library("broom")
 
