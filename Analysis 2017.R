@@ -10,7 +10,6 @@ library("broom")
 ## WARMER - Bud, Flower, Seed and Ripe Seed date for both species ##
 # fit simple glm
 dfPolli <- Pollination %>% 
-  #filter(Species == "LEO", Variable == "Flower") %>% 
   # remove Control plants at Veskre, because they are not needed for the plasticity question
   filter(Origin != c("VES") | Treatment != "Control") %>%  
   filter(Origin != c("RAM") | Treatment != "Control") %>%  
