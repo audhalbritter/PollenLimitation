@@ -19,12 +19,16 @@ vignettes/*.pdf
 .httr-oauth
 .Rproj.user
 
+# .DS_Store
+*.DS_Store
+
 #markdown cache
 *_cache/
 
 #data
 *.xls
 *.csv
+*.txt
 *.Rdata
 *.RData
 *.odb
