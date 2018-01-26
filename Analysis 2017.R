@@ -100,6 +100,60 @@ Plasticity_warmwet2 <- glance(dfPolli, fit) %>%
 #write_xlsx(Plasticity_warmwet2, path = "Output/Plasticity_warmwet.xlsx", col_names = TRUE)
 
 
+
+#***************************************************************************************
+#### GROWTH and REP OUTPUT ####
+
+## WARM
+dfPolli <- Pollination %>% 
+  mutate(OrigPLevel.cen = scale(OrigPLevel, scale = FALSE)) %>% 
+  # we only want Control plants at Gudmedalen
+  filter(Origin != "VES" | Treatment != "Control") %>%  
+  filter(Origin != "RAM" | Treatment != "Control") %>%  
+  # select only controls and warmer
+  filter(Treatment %in% c("Control", "Warmer")) %>% 
+  filter(Variable %in% c(, "EndSize", "RepOutput")) %>% 
+  filter(!is.na(value)) %>% # remove NAs
+  group_by(Species, Variable) %>% 
+  do(fit = lm(value ~ Treatment * OrigPLevel.cen, data = .))
+           
+# get the coefficients by group in a tidy data_frame
+Plasticity_warmGrowth1 <- tidy(dfPolli, fit) %>% 
+  mutate(estimate = round(estimate, 2), std.error = round(std.error, 2), statistic = round(statistic, 2)) %>% 
+  mutate(p.value = round(p.value, 3))
+write_xlsx(Plasticity_warmGrowth1, path = "Output/Plasticity_warmGrowth.xlsx", col_names = TRUE)
+
+# get the summary statistics by group in a tidy data_frame
+Plasticity_warmGrowth2 <- glance(dfPolli, fit)
+#write_xlsx(Plasticity_warmGrowth2, path = "Output/Plasticity_warmGrowth.xlsx", col_names = TRUE)
+
+
+## WETTER
+dfPolli <- Pollination %>% 
+  mutate(OrigPLevel.cen = scale(OrigPLevel, scale = FALSE)) %>% 
+  # we only want Control plants at Gudmedalen
+  filter(Origin != "VES" | Treatment != "Control") %>%  
+  filter(Origin != "RAM" | Treatment != "Control") %>%  
+  # select only controls and warmer
+  filter(Treatment %in% c("Control", "Warmer")) %>% 
+  filter(Variable %in% c("EndSize")) %>% 
+  filter(!is.na(value)) %>% # remove NAs
+  group_by(Species, Variable) %>% 
+  do(fit = lm(value ~ Treatment * OrigPLevel.cen, data = .))
+
+# get the coefficients by group in a tidy data_frame
+Plasticity_warmGrowth1 <- tidy(dfPolli, fit) %>% 
+  mutate(estimate = round(estimate, 2), std.error = round(std.error, 2), statistic = round(statistic, 2)) %>% 
+  mutate(p.value = round(p.value, 3))
+write_xlsx(Plasticity_warmGrowth1, path = "Output/Plasticity_warmGrowth.xlsx", col_names = TRUE)
+
+# get the summary statistics by group in a tidy data_frame
+Plasticity_warmGrowth2 <- glance(dfPolli, fit)
+#write_xlsx(Plasticity_warmGrowth2, path = "Output/Plasticity_warmGrowth.xlsx", col_names = TRUE)
+
+
+
+
 #***************************************************************************************
 #### ADAPTATION ####
 ## WARMER - Flowering date for Leontodon ##
