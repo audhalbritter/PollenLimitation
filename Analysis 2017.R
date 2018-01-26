@@ -8,62 +8,96 @@ library("broom")
 #***************************************************************************************
 #### PLASTICITY ####
 ## WARMER - Bud, Flower, Seed and Ripe Seed date for both species ##
-# fit simple glm
+# fit nb. glm
 dfPolli <- Pollination %>% 
-  # remove Control plants at Veskre, because they are not needed for the plasticity question
-  filter(Origin != c("VES") | Treatment != "Control") %>%  
-  filter(Origin != c("RAM") | Treatment != "Control") %>%  
+  # centre Plevel
+  mutate(OrigPLevel.cen = scale(OrigPLevel, scale = FALSE)) %>% 
+  # we only want Control plants at Gudmedalen and SKJ
+  filter(Origin != "VES" | Treatment != "Control") %>%  
+  filter(Origin != "RAM" | Treatment != "Control") %>%  
   # select only controls and warmer
-  filter(Treatment %in% c("Control", "Warmer")) %>% 
+  filter(Treatment %in% c("Control", "Warmer")) %>% # select treatments
+  filter(Variable %in% c("Bud", "Flower", "Seed")) %>% # select pheno stages
   filter(!is.na(value)) %>%  # remove NAs
-  filter(Variable %in% c("Bud", "Flower", "Seed", "Ripe Seed")) %>% 
-  group_by(Species, Variable) %>% 
-  do(fit = glm(value ~ Treatment * OrigPLevel, data = ., family = "poisson"))
-  
+  group_by(Species, Variable) %>% # use group by to do analysis for each species and pheno stage
+  do(fit = glm.nb(value ~ Treatment * OrigPLevel.cen, data = .))
+
 # get the coefficients by group in a tidy data_frame
-tidy(dfPolli, fit) %>% 
-  mutate(estimate = round(estimate, 2), std.error = round(std.error, 2), statistic = round(statistic, 2)) %>% 
-  mutate(p.value = round(p.value, 3)) %>% pn
+
+Plasticity_warmer1 <- tidy(dfPolli, fit) %>% 
+  mutate(estimate = (round(exp(estimate), 2)), std.error = round(std.error, 2), statistic = round(statistic, 2)) %>% 
+  mutate(p.value = round(p.value, 3))
+write_xlsx(Plasticity_warmer1, path = "Output/Plasticity_warmer.xlsx", col_names = TRUE)
 
 # get the summary statistics by group in a tidy data_frame
-glance(dfPolli, fit) %>% 
+
+Plasticity_warmer2 <- glance(dfPolli, fit) %>% 
   # check for overdispersion: ratio of residual deviance to degrees of freedom, overdispersion if ratio > 1
   mutate(ratio = deviance / df.residual)
+#write_xlsx(Plasticity_warmer2, path = "Output/Plasticity_warmer.xlsx", col_names = TRUE)
 
 
 ### IMPORTANT ###
 # - you need to check if model assumptions are met for each of these models
 # - because these are poisson model, you need to check if they are over disperesd.
 
-  
-## WETTER - Flowering date for Leontodon ##
-dat <- Pollination %>% 
-  filter(Species == "LEO", Variable == "Flower") %>% 
-  # remove Control plants at Veskre and Skj
-  filter(Origin != "VES" | Treatment != "Control") %>%  
+
+#***************************************************************************************
+## WETTER- Bud, Flower, Seed and Ripe Seed date for both species ##
+# fit nb. glm
+dfPolli <- Pollination %>% 
+  # centre Plevel
+  mutate(OrigTLevel.cen = scale(OrigTLevel, scale = FALSE)) %>% 
+  # we only want Control plants at GUD and RAM
   filter(Origin != "SKJ" | Treatment != "Control") %>%  
+  filter(Origin != "VES" | Treatment != "Control") %>%  
   # select only controls and warmer
   filter(Treatment %in% c("Control", "LaterSM")) %>% 
-  filter(!is.na(value)) # remove NAs
+  filter(Variable %in% c("Bud", "Flower", "Seed")) %>% 
+  filter(!is.na(value)) %>%  # remove NAs
+  group_by(Species, Variable) %>% 
+  do(fit = glm.nb(value ~ Treatment * OrigTLevel.cen, data = .))
 
-# fit dimple glm
-fit <- glm(value ~ Treatment * OrigTLevel, data = dat, family = "poisson")
-summary(fit)
+# get the coefficients by group in a tidy data_frame
+Plasticity_wetter1 <- tidy(dfPolli, fit) %>% 
+  mutate(estimate = round(exp(estimate), 2), std.error = round(std.error, 2), statistic = round(statistic, 2)) %>% 
+  mutate(p.value = round(p.value, 3))
+write_xlsx(Plasticity_wetter1, path = "Output/Plasticity_wetter.xlsx", col_names = TRUE)
+
+# get the summary statistics by group in a tidy data_frame
+Plasticity_wetter2 <- glance(dfPolli, fit) %>% 
+  # check for overdispersion: ratio of residual deviance to degrees of freedom, overdispersion if ratio > 1
+  mutate(ratio = deviance / df.residual)
+#write_xlsx(Plasticity_wetter2, path = "Output/Plasticity_wetter.xlsx", col_names = TRUE)
   
-## WARM AND WET - Flowering date for Leontodon ##
-dat <- Pollination %>% 
-  filter(Species == "LEO", Variable == "Flower") %>% 
+
+
+#***************************************************************************************
+## WARM AND WET - Flowering date for both species and all pheno stages##
+# fit nb. glm
+dfPolli <- Pollination %>% 
   # we only want Control plants at Gudmedalen
   filter(Origin != "VES" | Treatment != "Control") %>%  
   filter(Origin != "RAM" | Treatment != "Control") %>%  
   filter(Origin != "SKJ" | Treatment != "Control") %>%  
   # select only controls and warmer
   filter(Treatment %in% c("Control", "WarmLate")) %>% 
-  filter(!is.na(value)) # remove NAs
+  filter(Variable %in% c("Bud", "Flower", "Seed")) %>% 
+  filter(!is.na(value)) %>% # remove NAs
+  group_by(Species, Variable) %>% 
+  do(fit = glm.nb(value ~ Treatment, data = .))
 
-# fit dimple glm
-fit <- glm(value ~ Treatment, data = dat, family = "poisson")
-summary(fit)
+# get the coefficients by group in a tidy data_frame
+Plasticity_warmwet1 <- tidy(dfPolli, fit) %>% 
+  mutate(estimate = round(exp(estimate), 2), std.error = round(std.error, 2), statistic = round(statistic, 2)) %>% 
+  mutate(p.value = round(p.value, 3))
+write_xlsx(Plasticity_warmwet1, path = "Output/Plasticity_warmwet.xlsx", col_names = TRUE)
+
+# get the summary statistics by group in a tidy data_frame
+Plasticity_warmwet2 <- glance(dfPolli, fit) %>% 
+  # check for overdispersion: ratio of residual deviance to degrees of freedom, overdispersion if ratio > 1
+  mutate(ratio = deviance / df.residual)
+#write_xlsx(Plasticity_warmwet2, path = "Output/Plasticity_warmwet.xlsx", col_names = TRUE)
 
 
 #***************************************************************************************
