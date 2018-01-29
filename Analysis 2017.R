@@ -4,7 +4,7 @@
 source("Merging 2015 and 2017 data.R")
 library("MASS")
 library("broom")
-
+library("writexl")
 # FUNCTION
 #### CHECK MODEL ASSUMPTIONS ####
 #(Generalized) Linear models make some strong assumptions concerning the data structure:
