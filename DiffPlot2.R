@@ -1,4 +1,6 @@
+########################################
 #### ORIGIN - PHENOTYPIC PLASTICITY ####
+########################################
 
 ### SNWOMELT ###
 SMDiff <- Pollination %>% 
@@ -46,16 +48,31 @@ DiffVariables <- MeanVariables %>%
 
 
 ### PHENOLOGY ###
+
+# Which tests are significant
+Significance0 <- Plasticity_warmer1 %>% 
+  bind_rows(Plasticity_wetter1, Plasticity_warmwet1) %>%
+  filter(term %in% c("TreatmentWarmer", "TreatmentLaterSM", "TreatmentWarmLate")) %>% 
+  mutate(signif = ifelse(p.value < 0.05, 1, 0)) %>% 
+  mutate(Treatment = substr(term, 10, nchar(term))) %>% 
+  mutate(signif = ifelse(Species == "LEO" & Variable %in% c("Flower", "Seed") & Treatment == "Warmer", 1, signif))
+  
+SP <- c(LEO = "Leontodon autumnalis", RAN = "Ranunculus acris")
+VAR <- c(EndSize = "Longest leaf", RepOutput = "Reproductive output")
+
 PhenologyPlastic <- DiffVariables %>% 
   filter(Year == 2017, Variable %in% c("Bud", "Flower", "Seed")) %>% 
   left_join(SMDiff, by = c("Species", "Year", "Origin", "Treatment")) %>% 
+  left_join(Significance0, by = c("Species", "Variable", "Treatment")) %>% 
   mutate(Variable = factor(Variable, levels = c("Bud", "Flower", "Seed"))) %>%
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
-  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = Treatment, alpha = N < 5, linetype = N< 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
+  mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>% 
+  mutate(shape1 = factor(shape1, levels = c("Warmer_0", "Warmer_1", "Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>%
+  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N< 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
   scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
-  scale_shape_manual(name = "Treatment:", values = c(17, 16, 15)) +
+  scale_shape_manual(name = "Treatment:", values = c(2, 17, 1, 16, 0, 15)) +
   scale_alpha_manual(name = "Treatment:", values = c(1, 0.3)) +
   scale_linetype_manual(values = c("solid", "dashed")) +
   #scale_fill_manual(name = "Year:", values = c("white", "red")) +
@@ -65,41 +82,62 @@ PhenologyPlastic <- DiffVariables %>%
   panel_border(colour = "black", remove = FALSE) +
   annotate(geom = "text", x = 25, y = 13, label = "later", color = "grey20") +
   annotate(geom = "text", x = 25, y = -25, label = "earlier", color = "grey20") +
-  theme(legend.position = "none") +
-  facet_grid(Variable ~ Species)
+  theme(legend.position = "none", 
+        text = element_text(size = 10),
+        axis.text=element_text(size = 10),
+        axis.title=element_text(size = 10), 
+        strip.text.x = element_text(face = "italic")) +
+  facet_grid(Variable ~ Species, labeller=labeller(Species = SP))
 ggsave(PhenologyPlastic, filename = "PhenologyPlastic.pdf", height = 6, width = 8)
 
 
 
 ### BIOMASS ###
+# Which tests are significant
+Significance1 <- Plasticity_warmGrowth1 %>% 
+  bind_rows(Plasticity_wetGrowth1, Plasticity_warmwetGrowth1) %>%
+  filter(term %in% c("TreatmentWarmer", "TreatmentLaterSM", "TreatmentWarmLate")) %>% 
+  mutate(signif = ifelse(p.value < 0.05, 1, 0)) %>% 
+  mutate(Treatment = substr(term, 10, nchar(term)))
+
 ProductionPlastic <- DiffVariables %>% 
   filter(Year == 2017, Variable %in% c("EndSize", "RepOutput")) %>% 
   left_join(SMDiff, by = c("Species", "Year", "Origin", "Treatment")) %>% 
+  left_join(Significance1, by = c("Species", "Variable", "Treatment")) %>% 
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
-  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = Treatment, alpha = N < 5, linetype = N< 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
+  mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>% 
+  mutate(shape1 = factor(shape1, levels = c("Warmer_0", "Warmer_1", "Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>%
+  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N < 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
   scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
-  scale_shape_manual(name = "Treatment:", values = c(17, 16, 15)) +
+  scale_shape_manual(name = "Treatment:", values = c(2, 17, 1, 16, 0, 15)) +
   scale_alpha_manual(name = "Treatment:", values = c(1, 0.3)) +
-  scale_linetype_manual(values = c("solid", "solid", "dashed")) +
-  labs(y = "Difference in biomass or reproductive output [g] \n between treatment and origin-control", x = "Difference in SMT between origin and destination site [days]", title = "Phenotypic plasticity: origin-control") +
+  scale_linetype_manual(values = c("solid", "dashed")) +
+  labs(y = "Difference in longest leave [cm] or reproductive \n output [g] between treatment and origin-control", x = "Difference in SMT between origin and destination site [days]", title = "Phenotypic plasticity: origin-control") +
   geom_errorbar(width = 0.18) +
   geom_point(size = 3) +
   panel_border(colour = "black", remove = FALSE) +
-  #annotate(geom = "text", x = 25, y = 13, label = "later", color = "grey20") +
-  #annotate(geom = "text", x = 25, y = -25, label = "earlier", color = "grey20") +
-  theme(legend.position = "none") +
-  facet_grid(Variable ~ Species, scales = "free")
+  theme(legend.position = "none", 
+        text = element_text(size = 10),
+        axis.text=element_text(size = 10),
+        axis.title=element_text(size = 10), 
+        strip.text.x = element_text(face = "italic")) +
+  facet_grid(Variable ~ Species, scales = "free", labeller=labeller(Species = SP, Variable = VAR))
 
-ggsave(ProductionPlastic, filename = "ProductionPlastic.pdf", height = 6, width = 6)
+ggsave(ProductionPlastic, filename = "ProductionPlastic.pdf", height = 4, width = 6)
 
 
 
 
 
 ###*******************************************************************************
+###*******************************************************************************
+###*******************************************************************************
+
+####################################
 #### DESTINATION - ADAPTATION ####
+####################################
 
 ### SNOWMELT ###
 SMDiffAdapt <- Pollination %>% 
@@ -115,7 +153,6 @@ SMDiffAdapt <- Pollination %>%
 NumberAdapt <- MeanVariables %>% 
   select(Species, Year, Treatment, Origin, Site, Variable, N) %>% 
   filter(N > 0)
-
 
 
 MeanVariablesAdapt <- Pollination %>% 
@@ -150,51 +187,79 @@ DiffVariablesAdapt <- MeanVariablesAdapt %>%
 
 
 ### PHENOLOGY ###
+
+# Which tests are significant
+Significance2 <- Adapt_warmer1 %>% 
+  bind_rows(Adapt_wetter1, Adapt_warmwet1) %>%
+  filter(term %in% c("TreatmentWarmer", "TreatmentLaterSM", "TreatmentWarmLate")) %>% 
+  mutate(signif = ifelse(p.value < 0.05, 1, 0)) %>% 
+  mutate(Treatment = substr(term, 10, nchar(term)))
+
 PhenologyAdapt <- DiffVariablesAdapt %>% 
   filter(Year == 2017, Variable %in% c("Bud", "Flower", "Seed")) %>% 
   left_join(SMDiffAdapt, by = c("Species", "Year", "Site", "Treatment")) %>% 
+  left_join(Significance2, by = c("Species", "Variable", "Treatment")) %>% 
   mutate(Variable = factor(Variable, levels = c("Bud", "Flower", "Seed"))) %>%
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
-  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = Treatment, alpha = N < 5, linetype = N < 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) +
+  mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>%
+  mutate(shape1 = factor(shape1, levels = c("Warmer_0", "Warmer_1", "Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>%
+  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N < 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) +
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
   scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
-  scale_shape_manual(name = "Treatment:", values = c(17, 16, 15)) +
+  scale_shape_manual(name = "Treatment:", values = c(2, 17, 1, 16, 0, 15)) +
   scale_alpha_manual(name = "Treatment:", values = c(1, 0.3)) +
-  scale_linetype_manual(values = c("solid", "solid", "dashed")) +
+  scale_linetype_manual(values = c("solid", "dashed")) +
   labs(y = "Difference in onset of stage [days] after SMT \n between treatment and destination-control", x = "Difference in SMT between origin and destination site [days]", title = "Genetic difference: destination-control") +
   geom_errorbar(width=0.18) +
   geom_point(size = 3) +
   panel_border(colour = "black", remove = FALSE) +
   annotate(geom = "text", x = 25, y = 10, label = "later", color = "grey30") +
   annotate(geom = "text", x = 25, y = -25, label = "earlier", color = "grey30") +
-  theme(legend.position = "none") +
-  facet_grid(Variable ~ Species)
+  theme(legend.position = "none", 
+        text = element_text(size = 10),
+        axis.text=element_text(size = 10),
+        axis.title=element_text(size = 10), 
+        strip.text.x = element_text(face = "italic")) +
+  facet_grid(Variable ~ Species, labeller=labeller(Species = SP))
 ggsave(PhenologyAdapt, filename = "PhenologyAdapt.pdf", height = 6, width = 8)
 
 
 
 ### BIOMASS ###
+
+# Which tests are significant
+Significance3 <- Adapt_warmGrowth1 %>% 
+  bind_rows(Adapt_wetterGrowth1, Adapt_warmwetGrowth1) %>%
+  filter(term %in% c("TreatmentWarmer", "TreatmentLaterSM", "TreatmentWarmLate")) %>% 
+  mutate(signif = ifelse(p.value < 0.05, 1, 0)) %>% 
+  mutate(Treatment = substr(term, 10, nchar(term)))
+
 ProductionAdapt <- DiffVariablesAdapt %>% 
   filter(Year == 2017, Variable %in% c("EndSize", "RepOutput")) %>% 
   left_join(SMDiffAdapt, by = c("Species", "Year", "Site", "Treatment")) %>% 
+  left_join(Significance3, by = c("Species", "Variable", "Treatment")) %>% 
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
-  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = Treatment, alpha = N < 5, linetype = N< 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
+  mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>%
+  mutate(shape1 = factor(shape1, levels = c("Warmer_0","Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>%
+  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N< 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
   scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
-  scale_shape_manual(name = "Treatment:", values = c(17, 16, 15)) +
+  scale_shape_manual(name = "Treatment:", values = c(2, 1, 16, 0, 15)) +
   scale_alpha_manual(name = "Treatment:", values = c(1, 0.3)) +
-  scale_linetype_manual(values = c("solid", "solid", "dashed")) +
-  labs(y = "Difference in biomass or reproductive output [g] \n between treatment and destination-control", x = "Difference in SMT between origin and destination site [days]", title = "Genetic difference: destination-control") +
+  scale_linetype_manual(values = c("solid", "dashed")) +
+  labs(y = "Difference in longest leave [cm] or reproductive output [g] \n between treatment and destination-control", x = "Difference in SMT between origin and destination site [days]", title = "Genetic difference: destination-control") +
   geom_errorbar(width = 0.18) +
   geom_point(size = 3) +
   panel_border(colour = "black", remove = FALSE) +
-  #annotate(geom = "text", x = 25, y = 13, label = "later", color = "grey20") +
-  #annotate(geom = "text", x = 25, y = -25, label = "earlier", color = "grey20") +
-  theme(legend.position = "none") +
-  facet_grid(Variable ~ Species, scales = "free")
-ggsave(ProductionAdapt, filename = "ProductionAdapt.pdf", height = 6, width = 6)
+  theme(legend.position = "none", 
+        text = element_text(size = 10),
+        axis.text=element_text(size = 10),
+        axis.title=element_text(size = 10), 
+        strip.text.x = element_text(face = "italic")) +
+  facet_grid(Variable ~ Species, scales = "free", labeller=labeller(Species = SP, Variable = VAR))
+ggsave(ProductionAdapt, filename = "ProductionAdapt.pdf", height = 4, width = 6)
 
 
 
