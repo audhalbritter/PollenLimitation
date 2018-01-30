@@ -5,6 +5,7 @@ source("Merging 2015 and 2017 data.R")
 library("MASS")
 library("broom")
 library("writexl")
+
 # FUNCTION
 #### CHECK MODEL ASSUMPTIONS ####
 #(Generalized) Linear models make some strong assumptions concerning the data structure:
@@ -23,7 +24,9 @@ fix.check <- function(mod){    #function to produce model-checking plots for the
   rug(resid(mod))}
 
 Pollination17 <- Pollination %>% 
-  filter(Year == 2017)
+  filter(Year == 2017) %>% 
+  # remove Second Flowers
+  filter(!Pollination == "")
 
 #***************************************************************************************
 
@@ -150,6 +153,7 @@ Plasticity_warmwet2 <- glance(dfPolli, fit) %>%
 
 ## WARM
 dfPolli <- Pollination17 %>% 
+  filter(Pollination == "control") %>% 
   mutate(OrigPLevel.cen = scale(OrigPLevel, scale = FALSE)) %>% 
   # we only want Control plants at Gudmedalen
   filter(Origin != "VES" | Treatment != "Control") %>%  
@@ -174,6 +178,7 @@ Plasticity_warmGrowth2 <- glance(dfPolli, fit)
 
 ### Exceptions only testing GUD plants (control and warmer)
 dfPolli <- Pollination17 %>% 
+  filter(Pollination == "control") %>% 
   # we only want plants from Gudmedalen
   filter(Species == "LEO") %>% 
   filter(Origin == "SKJ") %>%
@@ -191,6 +196,7 @@ tidy(dfPolli, fit) %>%
 
 ## WETTER
 dfPolli <- Pollination17 %>% 
+  filter(Pollination == "control") %>% 
   mutate(OrigTLevel.cen = scale(OrigTLevel, scale = FALSE)) %>% 
   # we only want Control plants at Gudmedalen
   filter(Origin != "SKJ" | Treatment != "Control") %>%  
@@ -216,6 +222,7 @@ Plasticity_warmGrowth2 <- glance(dfPolli, fit)
 
 ### Exceptions only testing GUD plants (control and warmer)
 dfPolli <- Pollination %>% 
+  filter(Pollination == "control") %>% 
   # we only want plants from Gudmedalen
   filter(Species == "RAN") %>% 
   filter(Origin == "GUD") %>%
@@ -233,7 +240,8 @@ tidy(dfPolli, fit) %>%
 
 
 ## WARMER AND WETTER
-dfPolli <- Pollination17 %>% 
+dfPolli <- Pollination17 %>%
+  filter(Pollination == "control") %>% 
   # we only want Control plants at Gudmedalen
   filter(Origin != "SKJ" | Treatment != "Control") %>%  
   filter(Origin != "RAM" | Treatment != "Control") %>%  
@@ -389,6 +397,7 @@ Adapt_warmwet2 <- glance(dfPolli, fit) %>%
 
 ## WARM
 dfPolli <- Pollination17 %>% 
+  filter(Pollination == "control") %>% 
   mutate(DestPLevel.cen = scale(DestPLevel, scale = FALSE)) %>% 
   # remove Control plants at Gudmedalen and Skj, because they are not needed for the adaptation question
   filter(Origin != "GUD" | Treatment != "Control") %>%  
@@ -410,6 +419,7 @@ write_xlsx(Adapt_warmGrowth1, path = "Output/Adapt_warmGrowth1.xlsx", col_names 
 
 # Exception: only plants at VES
 dfPolli <- Pollination17 %>% 
+  filter(Pollination == "control") %>% 
   filter(Species == "LEO") %>% 
   filter(Site == "VES") %>%  
   # select only controls and warmer
@@ -426,6 +436,7 @@ tidy(dfPolli, fit) %>%
 
 ## WETTER
 dfPolli <- Pollination17 %>% 
+  filter(Pollination == "control") %>% 
   mutate(DestTLevel.cen = scale(DestTLevel, scale = FALSE)) %>% 
   # remove Control plants at Gudmedalen and Skj, because they are not needed for the adaptation question
   filter(Origin != "GUD" | Treatment != "Control") %>%  
@@ -446,6 +457,7 @@ write_xlsx(Adapt_wetterGrowth1, path = "Output/Adapt_wetterGrowth1.xlsx", col_na
 
 # Exception: only plants at SKJ
 dfPolli <- Pollination17 %>% 
+  filter(Pollination == "control") %>% 
   filter(Species == "RAN") %>% 
   # remove Control plants at Gudmedalen and Skj, because they are not needed for the adaptation question
   filter(Site == "SKJ") %>%  
@@ -464,6 +476,7 @@ tidy(dfPolli, fit) %>%
 
 ## WARM AND WETTER
 dfPolli <- Pollination17 %>% 
+  filter(Pollination == "control") %>% 
   # only keep Control plants at VES
   filter(Origin != "GUD" | Treatment != "Control") %>%  
   filter(Origin != "SKJ" | Treatment != "Control") %>%  
