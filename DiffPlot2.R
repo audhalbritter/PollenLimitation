@@ -2,6 +2,10 @@
 #### ORIGIN - PHENOTYPIC PLASTICITY ####
 ########################################
 
+Pollination <- Pollination %>% 
+  # remove Second Flowers
+  filter(Pollination == "")
+
 ### SNWOMELT ###
 SMDiff <- Pollination %>% 
   select(Origin, Treatment, Year, Species, SM) %>% 
@@ -101,7 +105,7 @@ Significance1 <- Plasticity_warmGrowth1 %>%
   mutate(Treatment = substr(term, 10, nchar(term)))
 
 ProductionPlastic <- DiffVariables %>% 
-  filter(Year == 2017, Variable %in% c("EndSize", "RepOutput")) %>% 
+  filter(Year == 2017, Variable %in% c("EndSize", "RepOutput"), Pollination == "control") %>% 
   left_join(SMDiff, by = c("Species", "Year", "Origin", "Treatment")) %>% 
   left_join(Significance1, by = c("Species", "Variable", "Treatment")) %>% 
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
@@ -236,7 +240,7 @@ Significance3 <- Adapt_warmGrowth1 %>%
   mutate(Treatment = substr(term, 10, nchar(term)))
 
 ProductionAdapt <- DiffVariablesAdapt %>% 
-  filter(Year == 2017, Variable %in% c("EndSize", "RepOutput")) %>% 
+  filter(Year == 2017, Variable %in% c("EndSize", "RepOutput"), Pollination == "control") %>% 
   left_join(SMDiffAdapt, by = c("Species", "Year", "Site", "Treatment")) %>% 
   left_join(Significance3, by = c("Species", "Variable", "Treatment")) %>% 
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
