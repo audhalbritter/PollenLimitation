@@ -153,7 +153,7 @@ Plasticity_warmwet2 <- glance(dfPolli, fit) %>%
 
 ## WARM
 dfPolli <- Pollination17 %>% 
-  filter(Pollination == "control") %>% 
+  filter(Pollination == "control") %>% # Only control plants, not pollinated plants
   mutate(OrigPLevel.cen = scale(OrigPLevel, scale = FALSE)) %>% 
   # we only want Control plants at Gudmedalen
   filter(Origin != "VES" | Treatment != "Control") %>%  
@@ -176,7 +176,7 @@ Plasticity_warmGrowth2 <- glance(dfPolli, fit)
 #write_xlsx(Plasticity_warmGrowth2, path = "Output/Plasticity_warmGrowth.xlsx", col_names = TRUE)
 
 
-### Exceptions only testing GUD plants (control and warmer)
+### Exceptions only testing GUD plants for LEO and Rep Output (control and warmer)
 dfPolli <- Pollination17 %>% 
   filter(Pollination == "control") %>% 
   # we only want plants from Gudmedalen
@@ -215,12 +215,12 @@ Plasticity_wetGrowth1 <- tidy(dfPolli, fit) %>%
 write_xlsx(Plasticity_wetGrowth1, path = "Output/Plasticity_wetGrowth.xlsx", col_names = TRUE)
 
 # get the summary statistics by group in a tidy data_frame
-Plasticity_warmGrowth2 <- glance(dfPolli, fit)
+Plasticity_wetGrowth2 <- glance(dfPolli, fit)
 #write_xlsx(Plasticity_warmGrowth2, path = "Output/Plasticity_warmGrowth.xlsx", col_names = TRUE)
 
 
 
-### Exceptions only testing GUD plants (control and warmer)
+### Exceptions only testing Ranunculus GUD plants  (control and warmer)
 dfPolli <- Pollination %>% 
   filter(Pollination == "control") %>% 
   # we only want plants from Gudmedalen
@@ -260,10 +260,16 @@ Plasticity_warmwetGrowth1 <- tidy(dfPolli, fit) %>%
 write_xlsx(Plasticity_warmwetGrowth1, path = "Output/Plasticity_warmwetGrowth.xlsx", col_names = TRUE)
 
 # get the summary statistics by group in a tidy data_frame
-Plasticity_warmGrowth2 <- glance(dfPolli, fit)
+Plasticity_warmwetGrowth2 <- glance(dfPolli, fit)
 #write_xlsx(Plasticity_warmGrowth2, path = "Output/Plasticity_warmGrowth.xlsx", col_names = TRUE)
 
+Plasticity_Growth1 <- Plasticity_warmGrowth1 %>% 
+  bind_rows(Plasticity_wetGrowth1, Plasticity_warmwetGrowth1)
+write_xlsx(Plasticity_Growth1, path = "Output/Plasticity_Growth1.xlsx", col_names = TRUE)
 
+Plasticity_Growth2 <- Plasticity_warmGrowth2 %>% 
+  bind_rows(Plasticity_wetGrowth2, Plasticity_warmwetGrowth2)
+write_xlsx(Plasticity_Growth2, path = "Output/Plasticity_Growth2.xlsx", col_names = TRUE)
 
 #***************************************************************************************
 #***************************************************************************************
@@ -417,7 +423,10 @@ Adapt_warmGrowth1 <- tidy(dfPolli, fit) %>%
 write_xlsx(Adapt_warmGrowth1, path = "Output/Adapt_warmGrowth1.xlsx", col_names = TRUE)
 
 
-# Exception: only plants at VES
+Adapt_warmGrowth2 <- glance(dfPolli, fit)
+
+
+# Exception: only LEO plants at VES
 dfPolli <- Pollination17 %>% 
   filter(Pollination == "control") %>% 
   filter(Species == "LEO") %>% 
@@ -434,6 +443,8 @@ tidy(dfPolli, fit) %>%
   mutate(p.value = round(p.value, 3))
 
 
+
+#***************************************************************************************
 ## WETTER
 dfPolli <- Pollination17 %>% 
   filter(Pollination == "control") %>% 
@@ -454,8 +465,10 @@ Adapt_wetterGrowth1 <- tidy(dfPolli, fit) %>%
   mutate(p.value = round(p.value, 3))
 write_xlsx(Adapt_wetterGrowth1, path = "Output/Adapt_wetterGrowth1.xlsx", col_names = TRUE)
 
+Adapt_wetterGrowth2 <- glance(dfPolli, fit)
 
-# Exception: only plants at SKJ
+
+# Exception: only RAN plants at SKJ
 dfPolli <- Pollination17 %>% 
   filter(Pollination == "control") %>% 
   filter(Species == "RAN") %>% 
@@ -473,7 +486,7 @@ tidy(dfPolli, fit) %>%
   mutate(p.value = round(p.value, 3))
 
 
-
+#***************************************************************************************
 ## WARM AND WETTER
 dfPolli <- Pollination17 %>% 
   filter(Pollination == "control") %>% 
@@ -494,3 +507,16 @@ Adapt_warmwetGrowth1 <- tidy(dfPolli, fit) %>%
   mutate(p.value = round(p.value, 3))
 write_xlsx(Adapt_wetterGrowth1, path = "Output/Adapt_wetterGrowth1.xlsx", col_names = TRUE)
 
+Adapt_warmwetGrowth2 <- glance(dfPolli, fit)
+
+
+# get the coefficients by group in a tidy data_frame
+Adapt_Growth1 <- Adapt_warmGrowth1 %>% 
+  bind_rows(Adapt_wetterGrowth1, Adapt_warmwetGrowth1)
+write_xlsx(Adapt_Growth1, path = "Output/Adapt_Growth1.xlsx", col_names = TRUE)
+
+# get the summary statistics by group in a tidy data_frame
+
+Adapt_Growth2 <- Adapt_warmGrowth2 %>% 
+  bind_rows(Adapt_wetterGrowth2, Adapt_warmwetGrowth2)
+write_xlsx(Adapt_Growth2, path = "Output/Adapt_Growth2.xlsx", col_names = TRUE)
