@@ -2,12 +2,10 @@
 #### ORIGIN - PHENOTYPIC PLASTICITY ####
 ########################################
 
-Pollination <- Pollination %>% 
-  # remove Second Flowers
-  filter(Pollination == "")
 
 ### SNWOMELT ###
 SMDiff <- Pollination %>% 
+  #filter(Pollination == "") %>% 
   select(Origin, Treatment, Year, Species, SM) %>% 
   distinct(Origin, Treatment, Year, Species, SM) %>% 
   filter(Origin != "VES" | Treatment != "Control") %>% # remove Control at Veskre
@@ -18,6 +16,7 @@ SMDiff <- Pollination %>%
 
 
 MeanVariables <- Pollination %>% 
+  #filter(Pollination == "") %>% 
   filter(Origin != "VES" | Treatment != "Control") %>% # remove Control at Veskre
   #mutate(Origin = plyr::mapvalues(Origin, c("GUD", "RAM", "SKJ"), c("Alpine-early", "Subalpine-early", "Alpine-late"))) %>% 
   #mutate(Origin = factor(Origin, levels = c("Alpine-early", "Alpine-late", "Subalpine-early"))) %>%
@@ -145,6 +144,7 @@ ggsave(ProductionPlastic, filename = "ProductionPlastic.pdf", height = 4, width 
 
 ### SNOWMELT ###
 SMDiffAdapt <- Pollination %>% 
+  filter(Pollination == "") %>% 
   select(Site, Origin, Treatment, Year, Species, SM) %>% 
   distinct(Site, Origin, Treatment, Year, Species, SM) %>% 
   filter(Origin != "GUD" | Treatment != "Control") %>% # remove Control at Gudmedalen
