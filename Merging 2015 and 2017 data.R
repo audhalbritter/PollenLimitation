@@ -98,6 +98,7 @@ data2017 <- data2017 %>%
          Flowering = ifelse(NrFlowers > 0, 1, 0),
          Year = 2017) %>% 
   select(-growth) %>% 
+  mutate(Pollination = ifelse(Pollination == "GUD", "pollination", Pollination)) %>% 
   as_tibble()
 
 Snowmelt <- data_frame(Site = rep(c("GUD", "RAM", "SKJ", "VES"), 2),
