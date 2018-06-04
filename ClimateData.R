@@ -16,10 +16,21 @@ soilmoisture <- soilmoisture %>%
   mutate(Soilmoisture = (Soilmoisture_1 + Soilmoisture_2 + Soilmoisture_3)/3) %>% # calculate mean
   mutate(Block = gsub(" ", "_", Block))
 
-
-ggplot(soilmoisture, aes(x = Date, y = Soilmoisture, color = Block)) +
-  geom_point() +
-  facet_wrap(~ Site)
+SoilmoisturePlot <- soilmoisture %>% 
+  ungroup(Site) %>% 
+  mutate(Site = factor(Site, c("Gud", "Skj", "Ram", "Ves"))) %>% 
+  mutate(Tlevel = plyr::mapvalues(Site, c("Gud", "Skj", "Ram", "Ves"), c("Alpine", "Alpine", "Subalpine", "Subalpine"))) %>% 
+  mutate(Plevel = plyr::mapvalues(Site, c("Gud", "Skj", "Ram", "Ves"), c("dry", "wet", "dry", "wet"))) %>% 
+  mutate(Site2 = paste(Tlevel, Plevel, sep = " - ")) %>% 
+  ggplot(aes(x = Date, y = Soilmoisture, color = Tlevel, linetype = Plevel)) +
+  geom_line(aes(shape = Block, alpha = 0.8)) +
+  geom_smooth() +
+  labs(x = "", y = "Soilmoisture in %") +
+  scale_colour_manual(name = "Temperature", values = c("lightblue", "orange")) +
+  scale_linetype_manual(name = "Precipitation", values = c(2,1)) +
+  facet_wrap(~ Site2) +
+  theme(text = element_text(size = 15), axis.text = element_text(size = 15), legend.position = "none")
+#ggsave(SoilmoisturePlot, filename = "SoilmoisturePlot.pdf", width = 6, height = 4)
 
 
 #### READ IN iBUTTON ####
@@ -71,16 +82,61 @@ load(file = "~/Dropbox/Bergen/SeedClim Climate/SeedClim-Climate-Data/Temperature
 dailyTemp <- temperature %>% 
   # calculate daily values
   mutate(year = year(date), date = ymd(format(date, "%Y.%b.%d")), doy = yday(date)) %>%
-  filter(year %in% c(2015, 2017)) %>% 
-  group_by(logger, year, date, site) %>%
+  filter(year == 2017, site %in% c("Gud", "Ram", "Skj", "Ves")) %>% 
+  group_by(logger, date, site) %>%
   summarise(n = n(), mean = mean(value, na.rm = TRUE), min = min(value, na.rm = TRUE), max = max(value, na.rm = TRUE)) %>% 
-  filter(n > 18)
+  filter(logger == "tempabove") %>% 
+  mutate(doy = yday(date)) %>% 
+  ungroup(site) %>% 
+  mutate(site = factor(site, c("Gud", "Skj", "Ram", "Ves"))) %>% 
+  mutate(Tlevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("Alpine", "Alpine", "Subalpine", "Subalpine"))) %>% 
+  mutate(Plevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("dry", "wet", "dry", "wet")))
 
-  
+# Temperature plot
+TemperaturePlot <- dailyTemp %>% 
+  filter(doy > 120 & doy < 260) %>% 
+  ggplot(aes(x = date, y = mean, color = Tlevel, linetype = Plevel)) +
+  geom_line() +
+  scale_colour_manual(name = "Temperature", values = c("lightblue", "orange")) +
+  scale_linetype_manual(name = "Precipitation", values = c(2,1)) +
+  labs(x = "", y = "Mean daily\n temperature in °C") +
+  theme(text = element_text(size = 15), axis.text = element_text(size = 15))
+#ggsave(TemperaturePlot, filename = "TemperaturePlot.pdf", width = 6, height = 4)
+
+
+# Cumulative temperature
+CumulativeTemp <- dailyTemp %>% 
+  select(site, doy, mean) %>% 
+  # threshold 1°C
+  mutate(mean = ifelse(mean > 1, mean, 0)) %>% 
+  spread(key = site, value = mean) %>% 
+  mutate(Ram = ifelse(doy < 137, 0, Ram)) %>% 
+  mutate(Gud = ifelse(doy < 143, 0, Gud)) %>% 
+  mutate(Ves = ifelse(doy < 135, 0, Ves)) %>% 
+  mutate(Skj = ifelse(doy < 176, 0, Skj)) %>% 
+  gather(key = site, value = mean, -doy) %>% 
+  group_by(site) %>% 
+  mutate(cumTemp = cumsum(mean)) %>% 
+  ungroup(site) %>% 
+  mutate(site = factor(site, c("Gud", "Skj", "Ram", "Ves"))) %>% 
+  mutate(Tlevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("Alpine", "Alpine", "Subalpine", "Subalpine"))) %>% 
+  mutate(Plevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("dry", "wet", "dry", "wet")))
+
+
+CumTempPlot <- CumulativeTemp %>% 
+  filter(doy > 120 & doy < 260) %>%
+  ggplot(aes(x = doy, y = cumTemp, color = Plevel, linetype = Tlevel)) +
+  geom_line() +
+  scale_colour_manual(name = "Precipitation", values = c("lightblue", "orange")) +
+  scale_linetype_manual(name = "Temperature", values = c(1,2)) +
+  labs(x = "", y = "Cumulative temperature \n in GDD above 1°C")  +
+  theme(text = element_text(size = 15), axis.text = element_text(size = 15), legend.position = "none")
+#ggsave(CumTempPlot, filename = "CumTempPlot.pdf", width = 6, height = 4)
+
+
+
+
 # Filling gaps for daily mean, min and max values
-
-
-
 fit200 <- lm(temp200cm ~ temp30cm + tempabove + tempsoil, data = lav)
 fit30 <- lm(temp30cm ~ temp200cm + tempabove + tempsoil + site, data = MeanT)
 fitabove <- lm(tempabove ~ tempsoil + site, data = MeanT)
