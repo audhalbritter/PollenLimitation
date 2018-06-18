@@ -104,23 +104,28 @@ TemperaturePlot <- dailyTemp %>%
 #ggsave(TemperaturePlot, filename = "TemperaturePlot.pdf", width = 6, height = 4)
 
 
-# Cumulative temperature
+# Cumulative temperature since snowmelt
 CumulativeTemp <- dailyTemp %>% 
-  select(site, doy, mean) %>% 
-  # threshold 1°C
-  mutate(mean = ifelse(mean > 1, mean, 0)) %>% 
-  spread(key = site, value = mean) %>% 
-  mutate(Ram = ifelse(doy < 137, 0, Ram)) %>% 
-  mutate(Gud = ifelse(doy < 143, 0, Gud)) %>% 
-  mutate(Ves = ifelse(doy < 135, 0, Ves)) %>% 
-  mutate(Skj = ifelse(doy < 176, 0, Skj)) %>% 
-  gather(key = site, value = mean, -doy) %>% 
-  group_by(site) %>% 
+  mutate(Year = year(date)) %>% 
+  select(site, Year, doy, mean) %>% 
+  rename(Site = site) %>% 
+  mutate(Site = plyr::mapvalues(Site, c("Gud", "Skj", "Ram", "Ves"), c("GUD", "SKJ", "RAM", "VES"))) %>% 
+  left_join(Snowmelt, by = c("Site", "Year")) %>% 
+  # threshold 1°C else 0
+  mutate(mean = ifelse(mean > 1, mean, 0)) %>%
+  # remove all data before SM
+  mutate(mean = ifelse(doy < SM, 0, mean)) %>% 
+  # calculate cumulative temperature
+  group_by(Site) %>% 
   mutate(cumTemp = cumsum(mean)) %>% 
   ungroup(site) %>% 
-  mutate(site = factor(site, c("Gud", "Skj", "Ram", "Ves"))) %>% 
-  mutate(Tlevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("Alpine", "Alpine", "Subalpine", "Subalpine"))) %>% 
-  mutate(Plevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("dry", "wet", "dry", "wet")))
+  mutate(dssm = doy - (SM - 1)) %>% 
+  mutate(dssm = ifelse(dssm < 1, 0, dssm)) %>% 
+  mutate(Site = factor(Site, c("GUD", "SKJ", "RAM", "VES"))) %>% 
+  select(-mean, -doy, -SM)
+
+#mutate(Tlevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("Alpine", "Alpine", "Subalpine", "Subalpine"))) %>% 
+#mutate(Plevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("dry", "wet", "dry", "wet"))) %>%
 
 
 CumTempPlot <- CumulativeTemp %>% 
@@ -135,7 +140,7 @@ CumTempPlot <- CumulativeTemp %>%
 
 
 
-
+# ************************************************************************************
 # Filling gaps for daily mean, min and max values
 fit200 <- lm(temp200cm ~ temp30cm + tempabove + tempsoil, data = lav)
 fit30 <- lm(temp30cm ~ temp200cm + tempabove + tempsoil + site, data = MeanT)
