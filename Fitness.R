@@ -1,6 +1,6 @@
 
 library(readxl)
-fitness <- read_excel("data_pollenlimitaiton_Sept16.xlsx", sheet = 6, col_names = TRUE)
+fitness <- read_excel("Data/2015/data_pollenlimitaiton_Sept16.xlsx", sheet = 6, col_names = TRUE)
 head(fitness)
 
 meta <- Ranunculus %>% distinct(orig, site, trt)
