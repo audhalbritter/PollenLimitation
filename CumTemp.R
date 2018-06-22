@@ -3,6 +3,7 @@
 # load the data
 source("Merging 2015 and 2017 data.R")
 source("ClimateData.R")
+#source("Analysis 2017 CumT.R")
 
 
 ##############################
@@ -66,8 +67,8 @@ DiffVariables <- MeanVariables %>%
 ### PHENOLOGY ###
 
 # Which tests are significant
-Significance0 <- Plasticity_warmer1 %>% 
-  bind_rows(Plasticity_wetter1, Plasticity_warmwet1) %>%
+Plasticity_cumTPhenology <- read_excel(path = "Output/Plasticity_cumTPhenologyh.xlsx")
+Significance0 <- Plasticity_cumTPhenology %>% 
   filter(term %in% c("TreatmentWarmer", "TreatmentLaterSM", "TreatmentWarmLate")) %>% 
   mutate(signif = ifelse(p.value < 0.05, 1, 0)) %>% 
   mutate(Treatment = substr(term, 10, nchar(term))) %>% 
@@ -78,25 +79,24 @@ VAR <- c(EndSize = "Longest leaf", RepOutput = "Reproductive output")
 
 PhenologyCumTPlastic <- DiffVariables %>% 
   left_join(SMDiff, by = c("Species", "Year", "Origin", "Treatment")) %>% 
-  #left_join(Significance0, by = c("Species", "Variable", "Treatment")) %>% 
+  left_join(Significance0, by = c("Species", "Variable", "Treatment")) %>% 
   mutate(Variable = factor(Variable, levels = c("Bud", "Flower", "Seed"))) %>%
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
-  #mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>% 
-  #mutate(shape1 = factor(shape1, levels = c("Warmer_0", "Warmer_1", "Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>%
-  #ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N < 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
-  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, alpha = N < 5, linetype = N < 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
+  mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>% 
+  mutate(shape1 = factor(shape1, levels = c("Warmer_0", "Warmer_1", "Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>% 
+  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N < 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
   scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
-  #scale_shape_manual(name = "Treatment:", values = c(2, 17, 1, 16, 0, 15)) +
+  scale_shape_manual(name = "Treatment:", values = c(2, 17, 1, 16, 0)) +
   scale_alpha_manual(name = "Treatment:", values = c(1, 0.3)) +
   scale_linetype_manual(values = c("solid", "dashed")) +
   labs(y = "Difference in onset of stage [cumulative temperature > 1°C] \n after SMT between treatment and origin-control", x = "Difference in SMT between origin and destination site [days]", title = "Phenotypic plasticity: origin-control") +
   geom_errorbar(width = 0.18) +
   geom_point(size = 3) +
   panel_border(colour = "black", remove = FALSE) +
-  annotate(geom = "text", x = 25, y = 200, label = "later", color = "grey20") +
-  annotate(geom = "text", x = 25, y = -300, label = "earlier", color = "grey20") +
+  annotate(geom = "text", x = 25, y = 200, label = "higher", color = "grey20") +
+  annotate(geom = "text", x = 25, y = -250, label = "lower", color = "grey20") +
   theme(legend.position = "none", 
         text = element_text(size = 10),
         axis.text=element_text(size = 10),
@@ -169,33 +169,33 @@ DiffVariablesAdapt <- MeanVariablesAdapt %>%
 ### PHENOLOGY ###
 
 # Which tests are significant
-Significance2 <- Adapt_warmer1 %>% 
-  bind_rows(Adapt_wetter1, Adapt_warmwet1) %>%
+Adapt_cumTPhenology <- read_excel(path = "Output/Adapt_cumTPhenology.xlsx")
+Significance2 <- Adapt_cumTPhenology %>% 
   filter(term %in% c("TreatmentWarmer", "TreatmentLaterSM", "TreatmentWarmLate")) %>% 
   mutate(signif = ifelse(p.value < 0.05, 1, 0)) %>% 
   mutate(Treatment = substr(term, 10, nchar(term)))
+  # do not need to change LEO Flower and Seed, result is the same
 
 PhenologyCumTAdapt <- DiffVariablesAdapt %>% 
   left_join(SMDiffAdapt, by = c("Species", "Year", "Site", "Treatment")) %>% 
-  #left_join(Significance2, by = c("Species", "Variable", "Treatment")) %>% 
+  left_join(Significance2, by = c("Species", "Variable", "Treatment")) %>% 
   mutate(Variable = factor(Variable, levels = c("Bud", "Flower", "Seed"))) %>%
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
-  #mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>%
-  #mutate(shape1 = factor(shape1, levels = c("Warmer_0", "Warmer_1", "Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>%
-  #ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N < 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) +
-  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, alpha = N < 5, linetype = N < 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) +
+  mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>%
+  mutate(shape1 = factor(shape1, levels = c("Warmer_0", "Warmer_1", "Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>% select(Treatment, signif, shape1) %>% pn
+  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N < 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) +
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
   scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
-  #scale_shape_manual(name = "Treatment:", values = c(2, 17, 1, 16, 0, 15)) +
+  scale_shape_manual(name = "Treatment:", values = c(2, 17, 1, 16, 0, 15)) +
   scale_alpha_manual(name = "Treatment:", values = c(1, 0.3)) +
   scale_linetype_manual(values = c("solid", "dashed")) +
   labs(y = "Difference in onset of stage [cumulative temperature > 1°C] \n after SMT between treatment and destination-control", x = "Difference in SMT between origin and destination site [days]", title = "Genetic difference: destination-control") +
   geom_errorbar(width=0.18) +
   geom_point(size = 3) +
   panel_border(colour = "black", remove = FALSE) +
-  annotate(geom = "text", x = 25, y = 80, label = "later", color = "grey30") +
-  annotate(geom = "text", x = 25, y = -400, label = "earlier", color = "grey30") +
+  annotate(geom = "text", x = 25, y = 80, label = "higher", color = "grey30") +
+  annotate(geom = "text", x = 25, y = -300, label = "lower", color = "grey30") +
   theme(legend.position = "none", 
         text = element_text(size = 10),
         axis.text=element_text(size = 10),
