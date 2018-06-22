@@ -97,20 +97,20 @@ ggsave(PhenologyPlastic, filename = "PhenologyPlastic.pdf", height = 6, width = 
 
 ### BIOMASS ###
 # Which tests are significant
-Significance1 <- Plasticity_warmGrowth1 %>% 
-  bind_rows(Plasticity_wetGrowth1, Plasticity_warmwetGrowth1) %>%
+Plasticity_Growth <- read_excel(path = "Output/Plasticity_Growth.xlsx")
+Significance1 <- Plasticity_Growth %>% 
   filter(term %in% c("TreatmentWarmer", "TreatmentLaterSM", "TreatmentWarmLate")) %>% 
   mutate(signif = ifelse(p.value < 0.05, 1, 0)) %>% 
   mutate(Treatment = substr(term, 10, nchar(term)))
 
 ProductionPlastic <- DiffVariables %>% 
-  filter(Year == 2017, Variable %in% c("EndSize", "RepOutput"), Pollination == "control") %>% 
+  filter(Year == 2017, Variable %in% c("EndSize", "RepOutput")) %>% 
   left_join(SMDiff, by = c("Species", "Year", "Origin", "Treatment")) %>% 
   left_join(Significance1, by = c("Species", "Variable", "Treatment")) %>% 
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>% 
-  mutate(shape1 = factor(shape1, levels = c("Warmer_0", "Warmer_1", "Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>%
+  mutate(shape1 = factor(shape1, levels = c("Warmer_0", "Warmer_1", "Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>% 
   ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N < 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
   scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
@@ -127,8 +127,7 @@ ProductionPlastic <- DiffVariables %>%
         axis.title=element_text(size = 10), 
         strip.text.x = element_text(face = "italic")) +
   facet_grid(Variable ~ Species, scales = "free", labeller=labeller(Species = SP, Variable = VAR))
-
-ggsave(ProductionPlastic, filename = "ProductionPlastic.pdf", height = 4, width = 6)
+ggsave(ProductionPlastic, filename = "FinalFigures/ProductionPlastic.pdf", height = 4, width = 6)
 
 
 
@@ -144,7 +143,6 @@ ggsave(ProductionPlastic, filename = "ProductionPlastic.pdf", height = 4, width 
 
 ### SNOWMELT ###
 SMDiffAdapt <- Pollination %>% 
-  filter(Pollination == "") %>% 
   select(Site, Origin, Treatment, Year, Species, SM) %>% 
   distinct(Site, Origin, Treatment, Year, Species, SM) %>% 
   filter(Origin != "GUD" | Treatment != "Control") %>% # remove Control at Gudmedalen
@@ -233,24 +231,24 @@ ggsave(PhenologyAdapt, filename = "PhenologyAdapt.pdf", height = 6, width = 8)
 ### BIOMASS ###
 
 # Which tests are significant
-Significance3 <- Adapt_warmGrowth1 %>% 
-  bind_rows(Adapt_wetterGrowth1, Adapt_warmwetGrowth1) %>%
+Adapt_Growth <- read_excel(path = "Output/Adapt_Growth.xlsx")
+Significance3 <- Adapt_Growth %>%
   filter(term %in% c("TreatmentWarmer", "TreatmentLaterSM", "TreatmentWarmLate")) %>% 
   mutate(signif = ifelse(p.value < 0.05, 1, 0)) %>% 
   mutate(Treatment = substr(term, 10, nchar(term)))
 
 ProductionAdapt <- DiffVariablesAdapt %>% 
-  filter(Year == 2017, Variable %in% c("EndSize", "RepOutput"), Pollination == "control") %>% 
+  filter(Year == 2017, Variable %in% c("EndSize", "RepOutput")) %>% 
   left_join(SMDiffAdapt, by = c("Species", "Year", "Site", "Treatment")) %>% 
   left_join(Significance3, by = c("Species", "Variable", "Treatment")) %>% 
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>%
-  mutate(shape1 = factor(shape1, levels = c("Warmer_0","Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>%
+  mutate(shape1 = factor(shape1, levels = c("Warmer_0","Later SM_0", "Warm & late SM_0"))) %>%
   ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N< 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
   scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
-  scale_shape_manual(name = "Treatment:", values = c(2, 1, 16, 0, 15)) +
+  scale_shape_manual(name = "Treatment:", values = c(2, 1, 0)) +
   scale_alpha_manual(name = "Treatment:", values = c(1, 0.3)) +
   scale_linetype_manual(values = c("solid", "dashed")) +
   labs(y = "Difference in longest leave [cm] or reproductive output [g] \n between treatment and destination-control", x = "Difference in SMT between origin and destination site [days]", title = "Genetic difference: destination-control") +
