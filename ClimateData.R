@@ -7,6 +7,7 @@ library("lubridate")
 library("tidyverse")
 library("cowplot")
 library("readxl")
+library("gridExtra")
 
 #### SOIL MOISTURE LOGGERS ####
 soilmoisture <- read_excel(path = "Data/2017/Soilmoisture_2017.xlsx", sheet = 1, col_names = TRUE, col_types = c(rep("text", 2), "date", rep("numeric", 3), rep("text", 4)))
@@ -20,17 +21,17 @@ SoilmoisturePlot <- soilmoisture %>%
   ungroup(Site) %>% 
   mutate(Site = factor(Site, c("Gud", "Skj", "Ram", "Ves"))) %>% 
   mutate(Tlevel = plyr::mapvalues(Site, c("Gud", "Skj", "Ram", "Ves"), c("Alpine", "Alpine", "Subalpine", "Subalpine"))) %>% 
-  mutate(Plevel = plyr::mapvalues(Site, c("Gud", "Skj", "Ram", "Ves"), c("dry", "wet", "dry", "wet"))) %>% 
+  mutate(Plevel = plyr::mapvalues(Site, c("Gud", "Skj", "Ram", "Ves"), c("early", "late", "early", "late"))) %>% 
   mutate(Site2 = paste(Tlevel, Plevel, sep = " - ")) %>% 
   ggplot(aes(x = Date, y = Soilmoisture, color = Tlevel, linetype = Plevel)) +
-  geom_line(aes(shape = Block, alpha = 0.8)) +
+  geom_point(alpha = 0.6) +
   geom_smooth() +
   labs(x = "", y = "Soilmoisture in %") +
   scale_colour_manual(name = "Temperature", values = c("lightblue", "orange")) +
   scale_linetype_manual(name = "Precipitation", values = c(2,1)) +
   facet_wrap(~ Site2) +
   theme(text = element_text(size = 15), axis.text = element_text(size = 15), legend.position = "none")
-#ggsave(SoilmoisturePlot, filename = "SoilmoisturePlot.pdf", width = 6, height = 4)
+ggsave(SoilmoisturePlot, filename = "FinalFigures/SoilmoisturePlot.jpg", width = 6, height = 4)
 
 
 #### READ IN iBUTTON ####
@@ -69,9 +70,9 @@ iButton <- mdat %>%
 # "RAM_leo3(2).csv" why 3 and 2???
 
 
-ggplot(iButton, aes(x = Date, y = Value, colour = Block)) +
-  geom_line() +
-  facet_grid(Species ~ Site)
+#ggplot(iButton, aes(x = Date, y = Value, colour = Block)) +
+  #geom_line() +
+  #facet_grid(Species ~ Site)
 
 
 #### CLLIMATE DATA SEEDCLIM ####
@@ -90,24 +91,24 @@ dailyTemp <- temperature %>%
   ungroup(site) %>% 
   mutate(site = factor(site, c("Gud", "Skj", "Ram", "Ves"))) %>% 
   mutate(Tlevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("Alpine", "Alpine", "Subalpine", "Subalpine"))) %>% 
-  mutate(Plevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("dry", "wet", "dry", "wet")))
+  mutate(Plevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("early", "late", "early", "late")))
 
 # Temperature plot
 TemperaturePlot <- dailyTemp %>% 
   filter(doy > 120 & doy < 260) %>% 
   ggplot(aes(x = date, y = mean, color = Tlevel, linetype = Plevel)) +
   geom_line() +
-  scale_colour_manual(name = "Temperature", values = c("lightblue", "orange")) +
-  scale_linetype_manual(name = "Precipitation", values = c(2,1)) +
-  labs(x = "", y = "Mean daily\n temperature in °C") +
-  theme(text = element_text(size = 15), axis.text = element_text(size = 15))
-#ggsave(TemperaturePlot, filename = "TemperaturePlot.pdf", width = 6, height = 4)
+  scale_colour_manual(name = "Temperature level", values = c("lightblue", "orange")) +
+  scale_linetype_manual(name = "Snowmelt time", values = c(2,1)) +
+  labs(x = "Month", y = "Mean daily\n temperature in °C") +
+  theme(text = element_text(size = 15), axis.text = element_text(size = 15), legend.position = "none")
+#ggsave(TemperaturePlot, filename = "FinalFigures/TemperaturePlot.jpg", width = 6, height = 4)
 
 
 # Cumulative temperature since snowmelt
 CumulativeTemp <- dailyTemp %>% 
   mutate(Year = year(date)) %>% 
-  select(site, Year, doy, mean) %>% 
+  select(site, Year, doy, mean, Tlevel, Plevel) %>% 
   rename(Site = site) %>% 
   mutate(Site = plyr::mapvalues(Site, c("Gud", "Skj", "Ram", "Ves"), c("GUD", "SKJ", "RAM", "VES"))) %>% 
   left_join(Snowmelt, by = c("Site", "Year")) %>% 
@@ -116,13 +117,13 @@ CumulativeTemp <- dailyTemp %>%
   # remove all data before SM
   mutate(mean = ifelse(doy < SM, 0, mean)) %>% 
   # calculate cumulative temperature
-  group_by(Site) %>% 
+  group_by(Site, Plevel, Tlevel) %>% 
   mutate(cumTemp = cumsum(mean)) %>% 
-  ungroup(site) %>% 
+  ungroup(Site, Plevel, Tlevel) %>% 
   mutate(dssm = doy - (SM - 1)) %>% 
   mutate(dssm = ifelse(dssm < 1, 0, dssm)) %>% 
   mutate(Site = factor(Site, c("GUD", "SKJ", "RAM", "VES"))) %>% 
-  select(-mean, -doy, -SM)
+  select(-mean, -SM)
 
 #mutate(Tlevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("Alpine", "Alpine", "Subalpine", "Subalpine"))) %>% 
 #mutate(Plevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("dry", "wet", "dry", "wet"))) %>%
@@ -130,12 +131,27 @@ CumulativeTemp <- dailyTemp %>%
 
 CumTempPlot <- CumulativeTemp %>% 
   filter(doy > 120 & doy < 260) %>%
-  ggplot(aes(x = doy, y = cumTemp, color = Plevel, linetype = Tlevel)) +
+  ggplot(aes(x = doy, y = cumTemp, color = Tlevel, linetype = Plevel)) +
   geom_line() +
-  scale_colour_manual(name = "Precipitation", values = c("lightblue", "orange")) +
-  scale_linetype_manual(name = "Temperature", values = c(1,2)) +
-  labs(x = "", y = "Cumulative temperature \n in GDD above 1°C")  +
+  scale_colour_manual(name = "Temperature level", values = c("lightblue", "orange")) +
+  scale_linetype_manual(name = "Snowmelt time", values = c(2,1)) +
+  labs(x = "Day of the year", y = "Cumulative temperature \n in GDD above 1°C")  +
   theme(text = element_text(size = 15), axis.text = element_text(size = 15), legend.position = "none")
-#ggsave(CumTempPlot, filename = "CumTempPlot.pdf", width = 6, height = 4)
+#ggsave(CumTempPlot, filename = "FinalFigures/CumTempPlot.jpg", width = 6, height = 4)
 
+# get legend
+p <- CumulativeTemp %>% 
+  filter(doy > 120 & doy < 260) %>%
+  ggplot(aes(x = doy, y = cumTemp, color = Tlevel, linetype = Plevel)) +
+  geom_line() +
+  scale_colour_manual(name = "Temperature level", values = c("lightblue", "orange")) +
+  scale_linetype_manual(name = "Snowmelt time", values = c(2,1)) +
+  labs(x = "Day of the year", y = "Cumulative temperature \n in GDD above 1°C")  +
+  theme(text = element_text(size = 12), axis.text = element_text(size = 12), legend.position = "top")
+LegendTop <- get_legend(p)
 
+Plot1 <- grid.arrange(TemperaturePlot, CumTempPlot, 
+                        layout_matrix = cbind(c(1), c(2)))
+
+Plot2 <- grid.arrange(LegendTop, Plot1, layout_matrix = rbind(c(1), c(2), c(2), c(2), c(2), c(2)))
+ggsave(Plot2, filename = "FinalFigures/TempPlot.jpg", width = 6, height = 4)
