@@ -28,6 +28,7 @@ ProbFlower <- Pollination17 %>%
 
 SP <- c(LEO = "L. autumnalis", RAN = "R. acris")
 ProbFlowerPlot <- ProbFlower %>% 
+  mutate(Species = factor(Species, levels = c("RAN", "LEO"))) %>% 
   #mutate(Species = plyr::mapvalues(Species, c("LEO", "RAN"), c("L. autumnails", "R. acris"))) %>% 
   ggplot(aes(x = value, y = ProbFl, color = Treatment)) +
   geom_point(alpha = 0.5) +
@@ -38,7 +39,7 @@ ProbFlowerPlot <- ProbFlower %>%
   labs(x = "Longest leaf in cm", y = "Probability of flowering") +
   facet_grid(Species ~ Site, labeller=labeller(Species = SP)) + 
   theme(strip.text.y = element_text(face = "italic"))
-ggsave(ProbFlowerPlot, filename = "FinalFigures/ProbFlowerPlot.pdf", height = 5, width = 8)
+ggsave(ProbFlowerPlot, filename = "FinalFigures/ProbFlowerPlot.jpg", height = 5, width = 8)
 
 ### WARMER
 dfProb <- ProbFlower %>% 
