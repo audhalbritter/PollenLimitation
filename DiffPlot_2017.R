@@ -2,6 +2,10 @@
 #### ORIGIN - PHENOTYPIC PLASTICITY ####
 ########################################
 
+# load the data
+source("Merging 2015 and 2017 data.R")
+source("ClimateData.R")
+
 
 ### SNWOMELT ###
 SMDiff <- Pollination %>% 
@@ -110,7 +114,9 @@ ProductionPlastic <- DiffVariables %>%
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>% 
-  mutate(shape1 = factor(shape1, levels = c("Warmer_0", "Warmer_1", "Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>% 
+  mutate(shape1 = factor(shape1, levels = c("Warmer_0", "Warmer_1", "Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>%
+  # change order of species
+  mutate(Species = factor(Species, levels = c("RAN", "LEO"))) %>% 
   ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N < 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
   scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
@@ -127,7 +133,7 @@ ProductionPlastic <- DiffVariables %>%
         axis.title=element_text(size = 10), 
         strip.text.x = element_text(face = "italic")) +
   facet_grid(Variable ~ Species, scales = "free", labeller=labeller(Species = SP, Variable = VAR))
-ggsave(ProductionPlastic, filename = "FinalFigures/ProductionPlastic.pdf", height = 4, width = 6)
+ggsave(ProductionPlastic, filename = "FinalFigures/ProductionPlastic.jpg", height = 4, width = 6)
 
 
 
@@ -243,8 +249,10 @@ ProductionAdapt <- DiffVariablesAdapt %>%
   left_join(Significance3, by = c("Species", "Variable", "Treatment")) %>% 
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
-  mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>%
+  mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>% 
   mutate(shape1 = factor(shape1, levels = c("Warmer_0","Later SM_0", "Warm & late SM_0"))) %>%
+  # change order of species
+  mutate(Species = factor(Species, levels = c("RAN", "LEO"))) %>% 
   ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N< 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
   scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
@@ -261,7 +269,7 @@ ProductionAdapt <- DiffVariablesAdapt %>%
         axis.title=element_text(size = 10), 
         strip.text.x = element_text(face = "italic")) +
   facet_grid(Variable ~ Species, scales = "free", labeller=labeller(Species = SP, Variable = VAR))
-ggsave(ProductionAdapt, filename = "ProductionAdapt.pdf", height = 4, width = 6)
+ggsave(ProductionAdapt, filename = "FinalFigures/ProductionAdapt.jpg", height = 4, width = 6)
 
 
 
