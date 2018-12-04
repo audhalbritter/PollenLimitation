@@ -41,6 +41,34 @@ ProbFlowerPlot <- ProbFlower %>%
   theme(strip.text.y = element_text(face = "italic"))
 ggsave(ProbFlowerPlot, filename = "FinalFigures/ProbFlowerPlot.jpg", height = 5, width = 8)
 
+
+# Only controls
+SP <- c(LEO = "L. autumnalis", RAN = "R. acris")
+dfProb <- ProbFlower %>% 
+  filter(Site == "VES") %>%
+  filter(!is.na(value), !is.na(ProbFl)) %>% 
+  group_by(Species) %>% 
+  do(mylogit = glm(Flowering ~ value * Treatment, data = ., family = "binomial"))
+
+ProbPlot <- augment(dfProb, mylogit) %>% 
+  filter(!(Species == "RAN" & Treatment == "Later SM")) %>% 
+  ggplot(aes(x = value, y = plogis(.fitted), colour = Treatment)) +
+  geom_line() +
+  scale_colour_manual(name = "Treatment", values = c("grey", "red", "blue", "purple")) +
+  labs(x = "Longest leaf in cm", y = "Probability of flowering") +
+  facet_grid( ~ Species, labeller=labeller(Species = SP)) + 
+  theme(strip.text.x = element_text(face = "italic"))
+ggsave(ProbPlot, filename = "FinalFigures/ProbPlot.jpg", height = 5, width = 8)
+
+
+tidy(dfProb, mylogit) %>% 
+  mutate(estimate = (round(estimate, 2)), std.error = round(std.error, 2), statistic = round(statistic, 2)) %>% 
+  mutate(p.value = round(p.value, 3)) %>% 
+  filter(std.error < 100) # remove Later SM for RAN
+
+
+
+
 ### WARMER
 dfProb <- ProbFlower %>% 
   filter(Treatment %in% c("Control", "Warmer")) %>% 
