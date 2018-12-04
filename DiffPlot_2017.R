@@ -83,7 +83,7 @@ PhenologyPlastic <- DiffVariables %>%
   scale_alpha_manual(name = "Treatment:", values = c(1, 0.3)) +
   scale_linetype_manual(values = c("solid", "dashed")) +
   #scale_fill_manual(name = "Year:", values = c("white", "red")) +
-  labs(y = "Difference in onset of stage [days] after SMT \n between treatment and origin-control", x = "Difference in SMT between origin and destination site [days]", title = "Phenotypic plasticity: origin-control") +
+  labs(y = "Difference in onset of stage [days] after SMT \n between treatment and origin-control", x = "Difference in SMT between origin and destination site [days]", title = "Phenotypic plasticity in phenology: origin-control") +
   geom_errorbar(width = 0.18) +
   geom_point(size = 3) +
   panel_border(colour = "black", remove = FALSE) +
