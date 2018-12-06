@@ -31,7 +31,9 @@ data2015Ran <- data2015Ran %>%
   #mutate(pheno.stage = plyr::mapvalues(pheno.stage, c("bs", "bp", "f",  "s", "rs"), c("Bud", "Bud2", "Flower", "Fruit", "RipeFruit"))) %>%
   mutate(Treatment = plyr::mapvalues(Treatment, c("c", "wa", "we", "ww"), c("Control", "Warmer", "LaterSM", "WarmLate"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Control", "Warmer", "LaterSM", "WarmLate"))) %>% 
-  mutate(Year = 2015)
+  mutate(Year = 2015,
+         Pollination = substr(ID, 3,3)) %>% 
+  mutate(Pollination = recode(Pollination, "C" = "control", "P" = "pollination"))
 
 
 ### META DATA
