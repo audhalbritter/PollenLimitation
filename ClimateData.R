@@ -76,82 +76,54 @@ iButton <- mdat %>%
 
 
 #### CLLIMATE DATA SEEDCLIM ####
-# Load daily temperature data
-load(file = "~/Dropbox/Bergen/SeedClim Climate/SeedClim-Climate-Data/Temperature.Rdata", verbose = TRUE)
 
-# Calculate daily min, mean and max values for 2017
-dailyTemp <- temperature2 %>% 
-  # calculate daily values
-  mutate(year = year(date), date = ymd(format(date, "%Y.%b.%d")), doy = yday(date)) %>%
-  filter(year == 2017, site %in% c("Gudmedalen", "Rambera", "Skjellingahaugen", "Veskre")) %>% 
-  group_by(logger, date, site) %>%
-  summarise(n = n(), mean = mean(value, na.rm = TRUE), min = min(value, na.rm = TRUE), max = max(value, na.rm = TRUE)) %>% 
-  filter(logger == "tempabove") %>% 
+#### LOAD DAILY TEMPERATURE WITH IMPUTED VALUES ####
+load(file = "DailyTemperature_Imputed.Rdata", verbose = TRUE)
+
+dailyTemp <- DailyTemperature_Imputed %>% 
+  filter(site %in% c("Gudmedalen", "Skjellingahaugen", "Rambera", "Veskre"),
+         year(date) %in% c(2015, 2017),
+         logger == "temp30cm") %>% 
   mutate(doy = yday(date)) %>% 
-  ungroup(site) %>% 
-  mutate(site = factor(site, c("Gudmedalen", "Skjellingahaugen", "Rambera", "Veskre"))) %>% 
+  mutate(site = factor(site, c("Gudmedalen", "Skjellingahaugen", "Rambera", "Veskre"))) %>%
   mutate(Tlevel = plyr::mapvalues(site, c("Gudmedalen", "Skjellingahaugen", "Rambera", "Veskre"), c("Alpine", "Alpine", "Subalpine", "Subalpine"))) %>% 
   mutate(Plevel = plyr::mapvalues(site, c("Gudmedalen", "Skjellingahaugen", "Rambera", "Veskre"), c("early", "late", "early", "late")))
 
-# Temperature plot
-TemperaturePlot <- dailyTemp %>% 
-  filter(doy > 120 & doy < 260) %>% 
-  ggplot(aes(x = date, y = mean, color = Tlevel, linetype = Plevel)) +
-  geom_line() +
-  scale_colour_manual(name = "Temperature level", values = c("lightblue", "orange")) +
-  scale_linetype_manual(name = "Snowmelt time", values = c(2,1)) +
-  labs(x = "Month", y = "Mean daily\n temperature in °C") +
-  theme(text = element_text(size = 15), axis.text = element_text(size = 15), legend.position = "none")
-#ggsave(TemperaturePlot, filename = "FinalFigures/TemperaturePlot.jpg", width = 6, height = 4)
-
 
 # Cumulative temperature since snowmelt
-CumulativeTemp <- dailyTemp %>% 
+DailyAndCumulativeTemp <- dailyTemp %>% 
   mutate(Year = year(date)) %>% 
-  dplyr::select(site, Year, doy, mean, Tlevel, Plevel) %>% 
+  select(site, Year, doy, value, Tlevel, Plevel) %>% 
   rename(Site = site) %>% 
   mutate(Site = plyr::mapvalues(Site, c("Gudmedalen", "Skjellingahaugen", "Rambera", "Veskre"), c("GUD", "SKJ", "RAM", "VES"))) %>% 
   left_join(Snowmelt, by = c("Site", "Year")) %>% 
   # threshold 1°C else 0
-  mutate(mean = ifelse(mean > 1, mean, 0)) %>%
+  mutate(value = ifelse(value > 1, value, 0)) %>%
   # remove all data before SM
-  mutate(mean = ifelse(doy < SM, 0, mean)) %>% 
+  mutate(value = ifelse(doy < SM, 0, value)) %>% 
   # calculate cumulative temperature
-  group_by(Site, Plevel, Tlevel) %>% 
-  mutate(cumTemp = cumsum(mean)) %>% 
+  group_by(Site, Plevel, Tlevel, Year) %>% 
+  mutate(cumTemp = cumsum(value)) %>% 
   ungroup(Site, Plevel, Tlevel) %>% 
   mutate(dssm = doy - (SM - 1)) %>% 
   mutate(dssm = ifelse(dssm < 1, 0, dssm)) %>% 
   mutate(Site = factor(Site, c("GUD", "SKJ", "RAM", "VES"))) %>% 
-  select(-mean, -SM)
+  rename(dailyTemperature = value, cumulativeTemperature = cumTemp) %>% 
+  gather(key = variable, value = value, - Site, - Year, - doy, -Tlevel, -Plevel, -SM, -dssm) %>% 
+  mutate(variable = factor(variable, levels = c("dailyTemperature", "cumulativeTemperature")))
 
-#mutate(Tlevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("Alpine", "Alpine", "Subalpine", "Subalpine"))) %>% 
-#mutate(Plevel = plyr::mapvalues(site, c("Gud", "Skj", "Ram", "Ves"), c("dry", "wet", "dry", "wet"))) %>%
 
-
-CumTempPlot <- CumulativeTemp %>% 
+ClimatePlot <- DailyAndCumulativeTemp %>% 
   filter(doy > 120 & doy < 260) %>%
-  ggplot(aes(x = doy, y = cumTemp, color = Tlevel, linetype = Plevel)) +
-  geom_line() +
-  scale_colour_manual(name = "Temperature level", values = c("lightblue", "orange")) +
+  ggplot(aes(x = doy, y = value, color = Tlevel, linetype = Plevel)) +
+  geom_line(size = 0.6) +
+  scale_colour_manual(name = "Temperature level", values = c("grey20", "grey80")) +
   scale_linetype_manual(name = "Snowmelt time", values = c(2,1)) +
-  labs(x = "Day of the year", y = "Cumulative temperature \n above 1°C")  +
-  theme(text = element_text(size = 15), axis.text = element_text(size = 15), legend.position = "none")
-#ggsave(CumTempPlot, filename = "FinalFigures/CumTempPlot.jpg", width = 6, height = 4)
-
-# get legend
-p <- CumulativeTemp %>% 
-  filter(doy > 120 & doy < 260) %>%
-  ggplot(aes(x = doy, y = cumTemp, color = Tlevel, linetype = Plevel)) +
-  geom_line() +
-  scale_colour_manual(name = "Temperature level", values = c("lightblue", "orange")) +
-  scale_linetype_manual(name = "Snowmelt time", values = c(2,1)) +
-  labs(x = "Day of the year", y = "Cumulative temperature \n in GDD above 1°C")  +
-  theme(text = element_text(size = 12), axis.text = element_text(size = 12), legend.position = "top")
-LegendTop <- get_legend(p)
-
-Plot1 <- grid.arrange(TemperaturePlot, CumTempPlot, 
-                        layout_matrix = cbind(c(1), c(2)))
-
-Plot2 <- grid.arrange(LegendTop, Plot1, layout_matrix = rbind(c(1), c(2), c(2), c(2), c(2), c(2)))
-ggsave(Plot2, filename = "FinalFigures/TempPlot.jpg", width = 6, height = 4)
+  labs(x = "Day of the year", y = "Cumulative temperature above 1°C      Mean daily temperature in °C")  +
+  facet_grid(variable ~ Year, scales = "free_y") +
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size = 8),
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 10),
+        legend.position = "top")
+ggsave(ClimatePlot, filename = "FinalFigures/ClimatePlot.jpg", width = 6, height = 4.5)
