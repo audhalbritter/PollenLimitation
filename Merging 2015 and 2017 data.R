@@ -2,8 +2,6 @@
 #### IMPORT  DATA ####
 ######################
 
-# Hello Debbie welcome back!
-
 ### 2015 and 2017 data
 ### LIBRARIES
 library("lubridate")
