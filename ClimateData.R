@@ -3,10 +3,6 @@
 #############################
 
 ### LIBRARIES
-library("lubridate")
-library("tidyverse")
-library("cowplot")
-library("readxl")
 library("gridExtra")
 
 #### SOIL MOISTURE LOGGERS ####
