@@ -14,9 +14,9 @@ pn <- . %>% print(n = Inf)
 #### 2015 DATA ####
 
 # Ranunculus
-data2015Ran <- read.csv("Data/2015/data_pollenlimitaiton_Sept16.csv", sep=";", stringsAsFactors = FALSE)
+data2015Ran1 <- read.csv("Data/2015/data_pollenlimitaiton_Sept16.csv", sep=";", stringsAsFactors = FALSE)
 
-data2015Ran <- data2015Ran %>% 
+data2015Ran <- data2015Ran1 %>% 
   as_tibble() %>% 
   rename(Species = sp, Site = site, Origin = orig, Treatment = trt, SM = sm) %>% 
   select(-ind, -TD, -PD, -TO, -PO, - s.ter, -s.ter.1, -s.ter.2, -s.ter.3, -s.ter.4) %>% 
@@ -53,6 +53,9 @@ Treatment <- data2015Ran %>%
   left_join(TPLevels, by = c("Origin" = "Site")) %>% 
   rename(OrigTLevel = TempLevel, OrigPLevel = PrecLevel)
   
+data2015Ran <- data2015Ran %>% 
+  left_join(Treatment)
+
 
 
 # Leontodon
@@ -107,12 +110,12 @@ Snowmelt <- data_frame(Site = rep(c("GUD", "RAM", "SKJ", "VES"), 2),
   
 
 # MERGING 2015 AND 2017 DATA
-Pollination <- data2015 %>% 
+Pollination1 <- data2015 %>% 
   bind_rows(data2017)
   
 # add metadata
 Pollination <- Treatment %>% 
-  left_join(Pollination, by = c("Site", "Origin")) %>% 
+  left_join(Pollination1, by = c("Site", "Origin")) %>% 
   left_join(Snowmelt, by = c(Site = "Site", "Year")) %>% 
   # if sessile bud missing, then take bud on stalk
   mutate(Date_bs = ifelse(is.na(Date_bs), Date_bp, Date_bs)) %>% 
