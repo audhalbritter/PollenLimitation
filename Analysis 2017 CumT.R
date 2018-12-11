@@ -5,54 +5,14 @@ library("broom")
 library("writexl")
 library("nlme")
 
-# FUNCTION
-#### CHECK MODEL ASSUMPTIONS ####
-#(Generalized) Linear models make some strong assumptions concerning the data structure:
-
-# Normality of Residuals (QQ plot, density plot of residuals)
-# Correct specification of the variance structure; Evaluate homoscedasticity (plot residuals vs. fitted values)
-
-fix.check <- function(mod){    #function to produce model-checking plots for the fixed effects of an lmer model
-  par(mfrow = c(2,2))
-  plot(fitted(mod),resid(mod))  #should have no pattern
-  abline(h=0)
-  print(anova(lm(fitted(mod)~resid(mod))))	#should be non-significant
-  qqnorm(resid(mod), ylab="Residuals")		#should be approximately straight line
-  qqline(resid(mod))
-  plot(density(resid(mod)))					#should be roughly normally distributed
-  rug(resid(mod))}
-
-
-#There are 4 main assumptions to check for a basic linear model like this.
-# Model check
-ModelCheck <- function(fit){
-  # Normality (of residuals)
-  p1 <- ggplot(NULL) +
-    aes(x = residuals(fit)) +
-    geom_bar()
-  
-  # Constant Error Variance (of residuals)
-  p2 <- ggplot(NULL) +
-    aes(x = fitted(fit), y = residuals(fit)) +
-    geom_hline(yintercept = 0, colour = "grey") +
-    geom_point()
-  
-  # Independence (of residuals)
-  p3 <- ggplot(NULL) +
-    aes(y = residuals(fit), x = 1:length(residuals(fit)) ) +
-    geom_point()
-  check.plot <- plot_grid(p1, p2, p3, nrow = 2)
-  check.plot
-}
-
-
-Pollination17 <- Pollination %>% 
-  filter(Year == 2017) %>% 
-  # remove Second Flowers
-  filter(!Pollination == "")
-
-
 #***************************************************************************************
+
+CumulativeTemperature <- CumulativeTemperature %>% 
+  # centre Plevel
+  mutate(OrigPLevel.cen = scale(OrigPLevel, scale = FALSE),
+         OrigTLevel.cen = scale(OrigTLevel, scale = FALSE),
+         DestPLevel.cen = scale(DestPLevel, scale = FALSE),
+         DestTLevel.cen = scale(DestTLevel, scale = FALSE))
 
 ####################
 #### PLASTICITY ####
@@ -61,72 +21,110 @@ Pollination17 <- Pollination %>%
 #### PHENOLOGY ####
 
 ## WARMER - Bud, Flower, Seed and Ripe Seed date for both species ##
-dfPolli <- CumulativeTemperature %>% 
-  # centre Plevel
-  mutate(OrigPLevel.cen = scale(OrigPLevel, scale = FALSE)) %>% 
+dfPolli <- CumulativeTemperature %>%
   # we only want Control plants at Gudmedalen and SKJ
-  filter(Origin != "VES" | Treatment != "Control") %>%  
-  filter(Origin != "RAM" | Treatment != "Control") %>%  
+  filter(Origin != "VES" | Treatment != "Control",
+         Origin != "RAM" | Treatment != "Control") %>%  
   # select only controls and warmer
-  filter(Treatment %in% c("Control", "Warmer")) %>% # select treatments
-  filter(Variable %in% c("Bud", "Flower", "Seed")) %>% # select pheno stages
-  filter(!is.na(value)) %>%  # remove NAs
-  group_by(Species, Variable) %>% # use group by to do analysis for each species and pheno stage
+  filter(Treatment %in% c("Control", "Warmer"), # select treatments
+         !is.na(cumTemp)) %>% # remove NAs
+  filter(!(Year == 2015 & Species == "LEO")) %>% 
+  # use group by to do analysis for each species and pheno stage
+  group_by(Year, Species, Variable) %>% 
   do(fit = lme(cumTemp ~ Treatment * OrigPLevel.cen, random = ~ 1 | NewBlock, data = .))
   
 ### Check model assumptions (add first line to dfPolli)
-do(model.check = ModelCheck(lme(cumTemp ~ Treatment * OrigPLevel.cen, random = ~ 1 | NewBlock, data = .)))
-pdf()
-dfPolli$model.check
-dev.off()
-
+# do(model.check = ModelCheck(lme(cumTemp ~ Treatment * OrigPLevel.cen, random = ~ 1 | NewBlock, data = .)))
+# pdf()
+# dfPolli$model.check
+# dev.off()
 
 # get the summary statistics by group in a tidy data_frame
-PlasticityCumT_warmer <- tidy(dfPolli, fit, effects = "fixed") %>% 
-  mutate(estimate = (round(exp(estimate), 2)), std.error = round(std.error, 2), statistic = round(statistic, 2), p.value = round(p.value, 3)) %>% 
-  mutate(Comparison = "Warmer")
+PlasticCTWarm <- TidyResults(dfPolli, "Warmer", "Plasticity_CumT_Warmer")
 
+### Only Leo 2015
+dfPolli <- CumulativeTemperature %>%
+  # we only want Control plants at Gudmedalen and SKJ
+  filter(Origin != "VES" | Treatment != "Control",
+         Origin != "RAM" | Treatment != "Control") %>%  
+  # select only controls and warmer
+  filter(Treatment %in% c("Control", "Warmer"), # select treatments
+         !is.na(cumTemp)) %>% # remove NAs
+  filter(Year == 2015 & Species == "LEO", Variable == "Bud") %>% 
+  # use group by to do analysis for each species and pheno stage
+  group_by() %>% 
+  do(fit = lme(cumTemp ~ Treatment * OrigPLevel.cen, random = ~ 1 | NewBlock, data = .))
+
+# get the summary statistics by group in a tidy data_frame
+PlasticCTWarmLeo15 <- TidyResults(dfPolli, "Warmer", "Plasticity_CumT_Warmer") %>% 
+  mutate(Year = 2015,
+         Species = "LEO",
+         Variable = "Bud")
+  
 
 ### Exceptions only testing GUD plants (control and warmer)
 dfPolli <- CumulativeTemperature %>% 
   # we only want plants from Gudmedalen
-  filter(Species == "LEO") %>% 
-  filter(Origin == "SKJ") %>%
+  filter(Species == "LEO",
+         Origin == "SKJ",
+         Year == 2017) %>%
   # select only controls and warmer
   filter(Treatment %in% c("Control", "Warmer")) %>% # select treatments
   filter(Variable %in% c("Flower", "Seed")) %>% # select pheno stages
-  filter(!is.na(value)) %>%  # remove NAs
+  filter(!is.na(cumTemp)) %>%  # remove NAs
   group_by(Variable) %>% # use group by to do analysis for each species and pheno stage
   do(fit = lme(cumTemp ~ Treatment, random = ~ 1 | NewBlock, data = .))
 
+PlasticCTWarmLeo17 <- TidyResults(dfPolli, "Warmer", "Plasticity_CumT_Warmer") %>%
+  mutate(Year = 2017,
+         Species = "LEO")
 
-tidy(dfPolli, fit, effects = "fixed") %>% 
-  mutate(estimate = (round(exp(estimate), 2)), std.error = round(std.error, 2), statistic = round(statistic, 2), p.value = round(p.value, 3))
+ResultsPlasticWarmer <- PlasticCTWarm %>% 
+  filter(!(Year == 2017 & Species == "LEO" & Variable %in% c("Flower", "Seed"))) %>% 
+  bind_rows(PlasticCTWarmLeo15, PlasticCTWarmLeo17)
 
 
 #***************************************************************************************
 ## WETTER- Bud, Flower, Seed and Ripe Seed date for both species ##
 dfPolli <- CumulativeTemperature %>% 
-  # centre Plevel
-  mutate(OrigTLevel.cen = scale(OrigTLevel, scale = FALSE)) %>% 
   # we only want Control plants at GUD and RAM
   filter(Origin != "SKJ" | Treatment != "Control") %>%  
   filter(Origin != "VES" | Treatment != "Control") %>%  
   # select only controls and warmer
   filter(Treatment %in% c("Control", "LaterSM")) %>% 
-  filter(Variable %in% c("Bud", "Flower", "Seed")) %>% 
-  filter(!is.na(value)) %>%  # remove NAs
-  group_by(Species, Variable) %>% 
+  filter(!is.na(cumTemp)) %>%  # remove NAs
+  filter(!(Year == 2015 & Species == "LEO")) %>% 
+  group_by(Year, Species, Variable) %>% 
   do(fit = lme(cumTemp ~ Treatment * OrigTLevel.cen, random = ~ 1 | NewBlock, data = .))
 
 
-# get the coefficients by group in a tidy data_frame
 # get the summary statistics by group in a tidy data_frame
-PlasticityCumT_wetter <- tidy(dfPolli, fit, effects = "fixed") %>% 
-  mutate(estimate = (round(exp(estimate), 2)), std.error = round(std.error, 2), statistic = round(statistic, 2), p.value = round(p.value, 3)) %>% 
-  mutate(Comparison = "Later SM")
+PlasticityCTWetter <- TidyResults(dfPolli, "LaterSM", "Plasticity_CumT_LaterSM")
 
 
+### Only Leo 2015
+dfPolli <- CumulativeTemperature %>%
+  # we only want Control plants at Gudmedalen and SKJ
+  #filter(Origin != "SKJ" | Treatment != "Control") %>%  
+  filter(Origin != "VES" | Treatment != "Control") %>% 
+  # select only controls and warmer
+  filter(Treatment %in% c("Control", "LaterSM"),
+         !is.na(cumTemp)) %>% # remove NAs
+  filter(Year == 2015 & Species == "LEO") %>%
+  filter(Variable == "Bud") %>% 
+  # use group by to do analysis for each species and pheno stage
+  group_by() %>% 
+  do(fit = lme(cumTemp ~ Treatment, random = ~ 1 | NewBlock, data = .))
+
+# get the summary statistics by group in a tidy data_frame
+PlasticCTWetterLeo15 <- TidyResults(dfPolli, "Wetter", "Plasticity_CumT_Wetter") %>% 
+  mutate(Year = 2015,
+         Species = "LEO",
+         Variable = "Bud")
+
+
+ResultsPlasticWetter <- PlasticityCTWetter %>% 
+  bind_rows(PlasticCTWetterLeo15)
 
 
 #***************************************************************************************
@@ -138,21 +136,45 @@ dfPolli <- CumulativeTemperature %>%
   filter(Origin != "SKJ" | Treatment != "Control") %>%  
   # select only controls and warmer
   filter(Treatment %in% c("Control", "WarmLate")) %>% 
-  filter(Variable %in% c("Bud", "Flower", "Seed")) %>% 
-  filter(!is.na(value)) %>% # remove NAs
-  group_by(Species, Variable) %>% 
+  filter(!(Year == 2015 & Species == "LEO")) %>% 
+  filter(!is.na(cumTemp)) %>% # remove NAs
+  group_by(Year, Species, Variable) %>% 
   do(fit = lme(cumTemp ~ Treatment, random = ~ 1 | NewBlock, data = .))
 
 
-# get the coefficients by group in a tidy data_frame
-PlasticityCumT_warmwet <- tidy(dfPolli, fit, effects = "fixed") %>% 
-  mutate(estimate = (round(exp(estimate), 2)), std.error = round(std.error, 2), statistic = round(statistic, 2), p.value = round(p.value, 3)) %>% 
-  mutate(Comparison = "Warm & later SM")
+# get the summary statistics by group in a tidy data_frame
+PlasticityCTWarmWet <- TidyResults(dfPolli, "WarmLatSM", "Plasticity_CumT_WarmLatSM")
+
+
+### Only Leo 2015
+dfPolli <- CumulativeTemperature %>%
+  # we only want Control plants at Gudmedalen and SKJ
+  filter(Origin != "VES" | Treatment != "Control") %>%  
+  filter(Origin != "RAM" | Treatment != "Control") %>%  
+  filter(Origin != "SKJ" | Treatment != "Control") %>%
+  # select only controls and warmer
+  filter(Treatment %in% c("Control", "WarmLate"),
+         !is.na(cumTemp)) %>% # remove NAs
+  filter(Year == 2015 & Species == "LEO") %>% 
+  filter(Variable == "Bud") %>% 
+  # use group by to do analysis for each species and pheno stage
+  group_by() %>% 
+  do(fit = lme(cumTemp ~ Treatment, random = ~ 1 | NewBlock, data = .))
+
+# get the summary statistics by group in a tidy data_frame
+PlasticCTWarmWetLeo15 <- TidyResults(dfPolli, "WarmWet", "Plasticity_CumT_WarmWet") %>% 
+  mutate(Year = 2015,
+         Species = "LEO",
+         Variable = "Bud")
+
+
+ResultsPlasticWarmWet <- PlasticityCTWarmWet %>% 
+  bind_rows(PlasticCTWarmWetLeo15)
 
 
 #### ALL PLASTICITY SUMMARIES ####
-Plasticity_cumTPhenology <- PlasticityCumT_warmer %>% 
-  bind_rows(PlasticityCumT_wetter, PlasticityCumT_warmwet)
+Plasticity_cumTPhenology <- ResultsPlasticWarmer %>% 
+  bind_rows(ResultsPlasticWetter, ResultsPlasticWarmWet)
 write_xlsx(Plasticity_cumTPhenology, path = "Output/Plasticity_cumTPhenologyh.xlsx", col_names = TRUE)
 
 
