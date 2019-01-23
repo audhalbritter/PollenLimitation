@@ -5,9 +5,10 @@
 ### 2015 and 2017 data
 ### LIBRARIES
 library("lubridate")
-library("tidyverse")
 library("cowplot")
 library("readxl")
+library("broom")
+library("tidyverse")
 
 pn <- . %>% print(n = Inf)
 
@@ -35,6 +36,36 @@ data2015Ran <- data2015Ran1 %>%
          Pollination = substr(ID, 3,3)) %>% 
   mutate(Pollination = recode(Pollination, "C" = "control", "P" = "pollination"))
 
+### Biomass, rep output etc. from Ran 2015 ###
+biomass2015Ran <- read_excel(path = "Data/2015/data_pollenlimitaiton_Sept16.xlsx", sheet = "spring 2015")
+
+repOutput2015Ran <- read_excel(path = "Data/2015/data_pollenlimitaiton_Sept16.xlsx", sheet = "Weight & Count Ranunculus")
+
+biomass2015Ran <- biomass2015Ran %>% 
+  filter(SP == "RAN") %>% 
+  select(SP, Site, Origin, Treatment, ID, `size_start [cm]`, `size_end [cm]`, `#1 flower`) %>% 
+  rename(Species = SP, InitSize = `size_start [cm]`, EndSize = `size_end [cm]`, NrFlowers = `#1 flower`) %>% 
+  mutate(InitSize = as.numeric(InitSize),
+         EndSize = as.numeric(EndSize),
+         Growth = EndSize - InitSize) %>%
+  mutate(ID =  gsub("_bis|_tris|_quad", "", ID)) %>%
+  group_by(ID, Site, Origin, Treatment) %>% 
+  mutate(NrFlowers2 = sum(NrFlowers, na.rm = TRUE)) %>% 
+  group_by(ID, Site, Origin, Treatment) %>% 
+  arrange(ID, Site, Origin, Treatment, NrFlowers) %>% 
+  slice(1) %>%  # remove duplicates
+  select(-NrFlowers) %>% 
+  rename(NrFlowers = NrFlowers2, Pollination = Treatment) 
+  
+
+
+# Reproductive output RAN 2015
+repOutput2015Ran <- repOutput2015Ran %>% 
+  select(SP, Site, Origin, Treatment, ID, TOT_Weight) %>% 
+  rename(RepOutput = TOT_Weight, Pollination = Treatment, Species = SP) %>% 
+  filter(!grepl("_bis|_tris|_quad", ID))# remove double flowers
+
+
 
 ### META DATA
 # T and P levels
@@ -54,9 +85,13 @@ Treatment <- data2015Ran %>%
   rename(OrigTLevel = TempLevel, OrigPLevel = PrecLevel)
   
 data2015Ran <- data2015Ran %>% 
-  left_join(Treatment)
+  left_join(Treatment) %>% 
+  # Merge ran data, biomass and repoutput
+  left_join(biomass2015Ran, by = c("Species", "Site", "Origin", "ID", "Pollination")) %>% 
+  left_join(repOutput2015Ran, by = c("Species", "Site", "Origin", "ID", "Pollination")) %>% 
+  mutate(Flowering = ifelse(NrFlowers > 0, 1, 0))
 
-
+  
 
 # Leontodon
 data2015 <- read_excel(path = "Data/2015/DataSheet_2015_Nicola.xlsx", col_names = TRUE, sheet = 1)
@@ -154,6 +189,3 @@ Pollination <- Pollination %>%
   left_join(MetaNewBlockGUD, by = c("Species", "Site", "Block", "ID")) %>% 
   mutate(NewBlock = ifelse(Species == "RAN" & Site == "GUD", NewBlockGUD, NewBlock)) %>% 
   select(-NewBlockGUD)
-
-# 2015 data: get Flower no-flower, biomass, rep output, nr flower
-# FIX FLOWERING, ALL PLANTS WITH BIOMASS, SHOULD HAVE FLOWERING 0 AND REP OUTPUT SHOULD NOT BE NA
