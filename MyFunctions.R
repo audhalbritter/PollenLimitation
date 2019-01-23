@@ -43,8 +43,8 @@ ModelCheck <- function(fit){
 
 
 ### Tidy results
-TidyResults <- function(res, treatment, name){
-  name <- tidy(res, fit, effects = "fixed") %>% 
+TidyResults <- function(res, treatment){
+  dat <- tidy(res, fit, effects = "fixed") %>% 
     mutate(estimate = (round(exp(estimate), 2)), 
            std.error = round(std.error, 2), 
            statistic = round(statistic, 2), 
@@ -53,5 +53,5 @@ TidyResults <- function(res, treatment, name){
            signif = ifelse(p.value < 0.05, 1, 0)) %>% 
     mutate(Comparison = treatment) %>% 
     rename(Treatment = term)
-  return(name)
+  return(dat)
 }
