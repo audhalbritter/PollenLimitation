@@ -63,7 +63,7 @@ biomass2015Ran <- biomass2015Ran %>%
 repOutput2015Ran <- repOutput2015Ran %>% 
   select(SP, Site, Origin, Treatment, ID, TOT_Weight) %>% 
   rename(RepOutput = TOT_Weight, Pollination = Treatment, Species = SP) %>% 
-  filter(!grepl("_bis|_tris|_quad", ID))# remove double flowers
+  filter(!grepl("_bis|_tris|_quad", ID)) # remove double flowers
 
 
 
