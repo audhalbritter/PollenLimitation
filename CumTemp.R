@@ -2,23 +2,17 @@
 
 # load the data
 source("Merging 2015 and 2017 data.R")
+source("MyFunctions.R")
 source("ClimateData.R")
-#source("Analysis 2017 CumT.R")
+source("Analysis 2017 CumT.R")
+
+# The palette with grey:
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 
 ##############################
 #### ORIGIN - PLASTICITY  ####
 ##############################
-
-Pollination17 <- Pollination %>% 
-  filter(Year == 2017) %>% 
-  # remove Second Flowers
-  filter(!Pollination == "")
-
-### Join cumulative temperature with phenology data by Origin
-CumulativeTemperature <- Pollination17 %>% 
-  filter(Variable %in% c("Bud", "Flower", "Seed")) %>% 
-  left_join(CumulativeTemp, by = c("Site" = "Site", "value" = "dssm", "Year"))
 
 
 ### SNWOMELT ###
@@ -35,7 +29,12 @@ SMDiff <- CumulativeTemperature %>%
 MeanVariables <- CumulativeTemperature %>% 
   filter(Origin != "VES" | Treatment != "Control") %>% # remove Control at Veskre
   group_by(Species, Year, Treatment, Site, Origin, Variable) %>% 
-  summarise(N = sum(!is.na(cumTemp)), mean = mean(cumTemp, na.rm = TRUE), se = sd(cumTemp, na.rm = TRUE)/sqrt(N))
+  summarise(N1 = sum(!is.na(cumTemp)), mean1 = mean(cumTemp, na.rm = TRUE), se1 = sd(cumTemp, na.rm = TRUE)/sqrt(N1),
+            N2 = sum(!is.na(value)), mean2 = mean(value, na.rm = TRUE), se2 = sd(value, na.rm = TRUE)/sqrt(N2)) %>% 
+  mutate(N = ifelse(Variable %in% c("Bud", "Flower", "Seed"), N1, N2),
+         mean = ifelse(Variable %in% c("Bud", "Flower", "Seed"), mean1, mean2),
+         se = ifelse(Variable %in% c("Bud", "Flower", "Seed"), se1, se2)) %>% 
+  select(-N1, -N2, -mean1, -mean2, -se1, -se2)
 
 # Number of observations per group
 Number <- MeanVariables %>% 
@@ -64,54 +63,76 @@ DiffVariables <- MeanVariables %>%
   inner_join(Number, by = c("Species", "Year", "Origin", "Treatment", "Variable"))
 
 
-#write_xlsx(DiffVariables, path = "Output/DiffVariablesPlasticity.xlsx", col_names = TRUE)
-
-
-
 ### PHENOLOGY ###
 
-# Which tests are significant
-Plasticity_cumTPhenology <- read_excel(path = "Output/Plasticity_cumTPhenologyh.xlsx")
-Significance0 <- Plasticity_cumTPhenology %>% 
-  filter(term %in% c("TreatmentWarmer", "TreatmentLaterSM", "TreatmentWarmLate")) %>% 
-  mutate(signif = ifelse(p.value < 0.05, 1, 0)) %>% 
-  mutate(Treatment = substr(term, 10, nchar(term))) %>% 
-  mutate(signif = ifelse(Species == "LEO" & Variable %in% c("Flower", "Seed") & Treatment == "Warmer", 1, signif))
+ResultsPlastic <- Plasticity_cumTPhenology %>%
+  filter(Treatment %in% c("Warmer", "LaterSM", "WarmLate"))
 
 SP <- c(LEO = "Leontodon autumnalis", RAN = "Ranunculus acris")
 VAR <- c(EndSize = "Longest leaf", RepOutput = "Reproductive output")
+STAGE <- c(Bud = "Bud", Flower = "Flower", Seed = "Fruit")
+PRODUCTION <- c(EndSize = "Longest leaf", RepOutput = "Reproductive output")
 
 PhenologyCumTPlastic <- DiffVariables %>% 
   left_join(SMDiff, by = c("Species", "Year", "Origin", "Treatment")) %>% 
-  left_join(Significance0, by = c("Species", "Variable", "Treatment")) %>% 
+  left_join(ResultsPlastic, by = c("Species", "Year", "Variable", "Treatment")) %>% 
   mutate(Variable = factor(Variable, levels = c("Bud", "Flower", "Seed"))) %>%
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
-  mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>% 
-  mutate(shape1 = factor(shape1, levels = c("Warmer_0", "Warmer_1", "Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>% 
   # change order of species
   mutate(Species = factor(Species, levels = c("RAN", "LEO"))) %>% 
-  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N < 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
+  filter(N >= 5) %>% 
+  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = factor(Year), alpha = factor(signif), ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
-  scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
-  scale_shape_manual(name = "Treatment:", values = c(2, 17, 1, 16, 0)) +
-  scale_alpha_manual(name = "Treatment:", values = c(1, 0.3)) +
-  scale_linetype_manual(values = c("solid", "dashed")) +
-  labs(y = "Difference in onset of stage [cumulative temperature > 1°C] \n after SMT between treatment and origin-control", x = "Difference in SMT between origin and destination site [days]", title = "Phenotypic plasticity: origin-control") +
+  scale_colour_manual(name = "Treatment", values = c("#E69F00", "#56B4E9", "#D55E00")) +
+  scale_shape_manual(name = "Year", values = c(15, 17)) +
+  scale_alpha_manual(name = "Significance", values = c(0.4, 1)) +
+  labs(y = "Difference in onset of stage [cumulative temperature > 1°C] \n after SMT between treatment and origin-control", x = "Shift in the timing of snowmelt due to transplant \n between origin and destination site [days]", title = "Phenotypic plasticity: origin-control") +
   geom_errorbar(width = 0.18) +
   geom_point(size = 3) +
   panel_border(colour = "black", remove = FALSE) +
   annotate(geom = "text", x = 25, y = 200, label = "higher", color = "grey20") +
   annotate(geom = "text", x = 25, y = -250, label = "lower", color = "grey20") +
-  theme(legend.position = "none", 
+  theme(#legend.position = "none",
         text = element_text(size = 10),
         axis.text=element_text(size = 10),
-        axis.title=element_text(size = 10), 
+        axis.title=element_text(size = 10),
         strip.text.x = element_text(face = "italic")) +
-  facet_grid(Variable ~ Species, labeller=labeller(Species = SP))
-ggsave(PhenologyCumTPlastic, filename = "FinalFigures/PhenologyCumTPlastic.jpg", height = 6, width = 8)
+  facet_grid(Variable ~ Species, labeller=labeller(Species = SP, Variable = STAGE))
+ggsave(PhenologyCumTPlastic, filename = "PhenologyCumTPlastic.jpg", height = 6, width = 8)
 
 
+
+
+### BIOMASS AND SEEDS ###
+# Which tests are significant
+Plasticity_Growth <- read_excel(path = "Plasticity_Growth.xlsx")
+
+ProductionPlastic <- DiffVariables %>% 
+  filter(Variable %in% c("EndSize", "RepOutput")) %>% 
+  left_join(SMDiff, by = c("Species", "Year", "Origin", "Treatment")) %>% 
+  left_join(Plasticity_Growth, by = c("Species", "Year", "Variable", "Treatment")) %>% 
+  mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
+  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
+  mutate(Species = factor(Species, levels = c("RAN", "LEO"))) %>% 
+  filter(N >= 5) %>% 
+  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = factor(Year), alpha = factor(signif), ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
+  geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
+  scale_colour_manual(name = "Treatment", values = c("#E69F00", "#56B4E9", "#D55E00")) +
+  scale_shape_manual(name = "Year", values = c(15, 17)) +
+  scale_alpha_manual(name = "Significance", values = c(0.4, 1)) +
+  labs(y = "Difference in longest leave [cm] or reproductive \n output [g] after SMT between treatment and origin-control", x = "Shift in the timing of snowmelt due to transplant \n between origin and destination site [days]", title = "Phenotypic plasticity: origin-control") +
+  geom_errorbar(width = 0.18) +
+  geom_point(size = 3) +
+  panel_border(colour = "black", remove = FALSE) +
+  theme(#legend.position = "none",
+    text = element_text(size = 10),
+    axis.text=element_text(size = 10),
+    axis.title=element_text(size = 10),
+    strip.text.x = element_text(face = "italic")) +
+  facet_grid(Variable ~ Species, scales = "free_y", labeller=labeller(Species = SP, Variable = PRODUCTION))
+
+ggsave(ProductionPlastic, filename = "ProductionPlastic.jpg", height = 4, width = 6)
 
 
 ###*******************************************************************************
@@ -119,14 +140,6 @@ ggsave(PhenologyCumTPlastic, filename = "FinalFigures/PhenologyCumTPlastic.jpg",
 ####################################
 #### DESTINATION - ADAPTATION ####
 ####################################
-
-
-### Join cumulative temperature with phenology data by Site
-CumulativeTemperature <- Pollination17 %>% 
-  filter(Variable %in% c("Bud", "Flower", "Seed")) %>% 
-  left_join(CumulativeTemp, by = c("Site" = "Site", "value" = "dssm", "Year"))
-
-
 
 ### SNOWMELT ###
 SMDiffAdapt <- CumulativeTemperature %>% 
@@ -172,45 +185,35 @@ DiffVariablesAdapt <- MeanVariablesAdapt %>%
   inner_join(Number, by = c("Species", "Year", "Site", "Treatment", "Variable"))
 
 
-#write_xlsx(DiffVariablesAdapt, path = "Output/DiffVariablesAdapt.xlsx", col_names = TRUE)
-
-
 ### PHENOLOGY ###
-
-# Which tests are significant
-Adapt_cumTPhenology <- read_excel(path = "Output/Adapt_cumTPhenology.xlsx")
-Significance2 <- Adapt_cumTPhenology %>% 
-  filter(term %in% c("TreatmentWarmer", "TreatmentLaterSM", "TreatmentWarmLate")) %>% 
-  mutate(signif = ifelse(p.value < 0.05, 1, 0)) %>% 
-  mutate(Treatment = substr(term, 10, nchar(term)))
-  # do not need to change LEO Flower and Seed, result is the same
+ResultsAdapt <- Adapt_cumTPhenology %>% 
+  filter(Treatment %in% c("Warmer", "LaterSM", "WarmLate"))
 
 PhenologyCumTAdapt <- DiffVariablesAdapt %>% 
-  left_join(SMDiffAdapt, by = c("Species", "Year", "Site", "Treatment")) %>% 
-  left_join(Significance2, by = c("Species", "Variable", "Treatment")) %>% 
+  left_join(SMDiffAdapt, by = c("Species", "Year", "Site", "Origin", "Treatment")) %>% 
+  left_join(ResultsAdapt, by = c("Species", "Year", "Variable", "Treatment")) %>% 
   mutate(Variable = factor(Variable, levels = c("Bud", "Flower", "Seed"))) %>%
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
-  mutate(shape1 = factor(paste(Treatment, signif, sep = "_"))) %>%
-  mutate(shape1 = factor(shape1, levels = c("Warmer_0", "Warmer_1", "Later SM_0", "Later SM_1", "Warm & late SM_0", "Warm & late SM_1"))) %>%
   # change order of species
   mutate(Species = factor(Species, levels = c("RAN", "LEO"))) %>% 
-  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = shape1, alpha = N < 5, linetype = N < 5, ymax = mean + 1.96*se, ymin = mean - 1.96*se)) +
+  filter(N >= 5) %>% 
+  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = factor(Year), alpha = factor(signif), ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
   geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
-  scale_colour_manual(name = "Treatment:", values = c("red", "blue", "purple")) +
-  scale_shape_manual(name = "Treatment:", values = c(2, 17, 1, 16, 0, 15)) +
-  scale_alpha_manual(name = "Treatment:", values = c(1, 0.3)) +
-  scale_linetype_manual(values = c("solid", "dashed")) +
-  labs(y = "Difference in onset of stage [cumulative temperature > 1°C] \n after SMT between treatment and destination-control", x = "Difference in SMT between origin and destination site [days]", title = "Genetic difference: destination-control") +
-  geom_errorbar(width=0.18) +
+  scale_colour_manual(name = "Treatment", values = c("#E69F00", "#56B4E9", "#D55E00")) +
+  scale_shape_manual(name = "Year:", values = c(15, 17)) +
+  scale_alpha_manual(name = "Significance:", values = c(0.4, 1)) +
+  labs(y = "Difference in onset of stage [cumulative temperature > 1°C] \n after SMT between treatment and destination-control", x = "Shift in the timing of snowmelt due to transplant \n between origin and destination site [days]", title = "Genetic difference: destination-control") +
+  geom_errorbar(width = 0.18) +
   geom_point(size = 3) +
   panel_border(colour = "black", remove = FALSE) +
-  annotate(geom = "text", x = 25, y = 80, label = "higher", color = "grey30") +
-  annotate(geom = "text", x = 25, y = -300, label = "lower", color = "grey30") +
-  theme(legend.position = "none", 
-        text = element_text(size = 10),
-        axis.text=element_text(size = 10),
-        axis.title=element_text(size = 10), 
-        strip.text.x = element_text(face = "italic")) +
-  facet_grid(Variable ~ Species, labeller=labeller(Species = SP))
-ggsave(PhenologyCumTAdapt, filename = "FinalFigures/PhenologyCumTAdapt.jpg", height = 6, width = 8)
+  annotate(geom = "text", x = 25, y = 200, label = "higher", color = "grey20") +
+  annotate(geom = "text", x = 25, y = -250, label = "lower", color = "grey20") +
+  theme(#legend.position = "none",
+    text = element_text(size = 10),
+    axis.text=element_text(size = 10),
+    axis.title=element_text(size = 10),
+    strip.text.x = element_text(face = "italic")) +
+  facet_grid(Variable ~ Species, labeller=labeller(Species = SP, Variable = STAGE))
+
+ggsave(PhenologyCumTAdapt, filename = "PhenologyCumTAdapt.jpg", height = 6, width = 8)
