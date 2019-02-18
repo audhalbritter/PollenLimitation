@@ -5,6 +5,7 @@ source("Merging 2015 and 2017 data.R")
 source("MyFunctions.R")
 source("ClimateData.R")
 source("Analysis 2017 CumT.R")
+library("dplyr")
 
 # The palette with grey:
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
@@ -17,7 +18,7 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2",
 
 ### SNWOMELT ###
 SMDiff <- CumulativeTemperature %>% 
-  select(Origin, Treatment, Year, Species, SM) %>% 
+  dplyr::select(Origin, Treatment, Year, Species, SM) %>% 
   distinct(Origin, Treatment, Year, Species, SM) %>% 
   filter(Origin != "VES" | Treatment != "Control") %>% # remove Control at Veskre
   left_join(Snowmelt, by = c(Origin = "Site", "Year")) %>% 
@@ -34,15 +35,15 @@ MeanVariables <- CumulativeTemperature %>%
   mutate(N = ifelse(Variable %in% c("Bud", "Flower", "Seed"), N1, N2),
          mean = ifelse(Variable %in% c("Bud", "Flower", "Seed"), mean1, mean2),
          se = ifelse(Variable %in% c("Bud", "Flower", "Seed"), se1, se2)) %>% 
-  select(-N1, -N2, -mean1, -mean2, -se1, -se2)
+  dplyr::select(-N1, -N2, -mean1, -mean2, -se1, -se2)
 
 # Number of observations per group
 Number <- MeanVariables %>% 
-  select(Species, Year, Treatment, Origin, Site, Variable, N)
+  dplyr::select(Species, Year, Treatment, Origin, Site, Variable, N)
 
 DiffVariables <- MeanVariables %>% 
   ungroup(Site) %>% 
-  select(-Site,-N) %>% 
+  dplyr::select(-Site,-N) %>% 
   unite(united, mean, se, sep = "_") %>% 
   spread(key = Treatment, value = united) %>% 
   separate(col = Control, into = c("Control_mean", "Control_se"), sep = "_", convert = TRUE) %>% 
@@ -53,7 +54,7 @@ DiffVariables <- MeanVariables %>%
   mutate(Warmer_mean = Warmer_mean - Control_mean, LaterSM_mean = LaterSM_mean - Control_mean, WarmLate_mean = WarmLate_mean - Control_mean) %>% 
   # calculate SE for difference
   mutate(Warmer_se = sqrt(Control_se^2 + Warmer_se^2), LaterSM_se = sqrt(Control_se^2 + LaterSM_se^2), WarmLate_se = sqrt(Control_se^2 + WarmLate_se^2)) %>% 
-  select(-Control_mean, -Control_se) %>% 
+  dplyr::select(-Control_mean, -Control_se) %>% 
   unite(Warmer, Warmer_mean, Warmer_se, sep = "_") %>% 
   unite(LaterSM, LaterSM_mean, LaterSM_se, sep = "_") %>% 
   unite(WarmLate, WarmLate_mean, WarmLate_se, sep = "_") %>% 
@@ -76,6 +77,7 @@ PRODUCTION <- c(EndSize = "Longest leaf", RepOutput = "Reproductive output")
 PhenologyCumTPlastic <- DiffVariables %>% 
   left_join(SMDiff, by = c("Species", "Year", "Origin", "Treatment")) %>% 
   left_join(ResultsPlastic, by = c("Species", "Year", "Variable", "Treatment")) %>% 
+  filter(Variable %in% c("Bud", "Flower", "Seed")) %>% 
   mutate(Variable = factor(Variable, levels = c("Bud", "Flower", "Seed"))) %>%
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
@@ -143,7 +145,7 @@ ggsave(ProductionPlastic, filename = "ProductionPlastic.jpg", height = 4, width 
 
 ### SNOWMELT ###
 SMDiffAdapt <- CumulativeTemperature %>% 
-  select(Site, Origin, Treatment, Year, Species, SM) %>% 
+  dplyr::select(Site, Origin, Treatment, Year, Species, SM) %>% 
   distinct(Site, Origin, Treatment, Year, Species, SM) %>% 
   filter(Origin != "GUD" | Treatment != "Control") %>% # remove Control at Gudmedalen
   left_join(Snowmelt, by = c(Origin = "Site", "Year")) %>% 
@@ -155,16 +157,22 @@ SMDiffAdapt <- CumulativeTemperature %>%
 MeanVariablesAdapt <- CumulativeTemperature %>% 
   filter(Origin != "GUD" | Treatment != "Control") %>% # remove Control at Gudmedalen
   group_by(Species, Year, Treatment, Site, Origin, Variable) %>% 
-  summarise(N = sum(!is.na(cumTemp)), mean = mean(cumTemp, na.rm = TRUE), se = sd(cumTemp, na.rm = TRUE)/sqrt(N))
+  summarise(N1 = sum(!is.na(cumTemp)), mean1 = mean(cumTemp, na.rm = TRUE), se1 = sd(cumTemp, na.rm = TRUE)/sqrt(N1),
+          N2 = sum(!is.na(value)), mean2 = mean(value, na.rm = TRUE), se2 = sd(value, na.rm = TRUE)/sqrt(N2)) %>% 
+  mutate(N = ifelse(Variable %in% c("Bud", "Flower", "Seed"), N1, N2),
+         mean = ifelse(Variable %in% c("Bud", "Flower", "Seed"), mean1, mean2),
+         se = ifelse(Variable %in% c("Bud", "Flower", "Seed"), se1, se2)) %>% 
+  dplyr::select(-N1, -N2, -mean1, -mean2, -se1, -se2)
+
 
 # Number of observations per group
 NumberAdapt <- MeanVariables %>% 
-  select(Species, Year, Treatment, Origin, Site, Variable, N)
+  dplyr::select(Species, Year, Treatment, Origin, Site, Variable, N)
 
 
 DiffVariablesAdapt <- MeanVariablesAdapt %>% 
   ungroup(Origin) %>% 
-  select(-Origin,-N) %>% 
+  dplyr::select(-Origin,-N) %>% 
   unite(united, mean, se, sep = "_") %>% 
   spread(key = Treatment, value = united) %>% 
   separate(col = Control, into = c("Control_mean", "Control_se"), sep = "_", convert = TRUE) %>% 
@@ -175,7 +183,7 @@ DiffVariablesAdapt <- MeanVariablesAdapt %>%
   mutate(Warmer_mean = Warmer_mean - Control_mean, LaterSM_mean = LaterSM_mean - Control_mean, WarmLate_mean = WarmLate_mean - Control_mean) %>% 
   # calculate SE for difference
   mutate(Warmer_se = sqrt(Control_se^2 + Warmer_se^2), LaterSM_se = sqrt(Control_se^2 + LaterSM_se^2), WarmLate_se = sqrt(Control_se^2 + WarmLate_se^2)) %>% 
-  select(-Control_mean, -Control_se) %>% 
+  dplyr::select(-Control_mean, -Control_se) %>% 
   unite(Warmer, Warmer_mean, Warmer_se, sep = "_") %>% 
   unite(LaterSM, LaterSM_mean, LaterSM_se, sep = "_") %>% 
   unite(WarmLate, WarmLate_mean, WarmLate_se, sep = "_") %>% 
@@ -192,6 +200,7 @@ ResultsAdapt <- Adapt_cumTPhenology %>%
 PhenologyCumTAdapt <- DiffVariablesAdapt %>% 
   left_join(SMDiffAdapt, by = c("Species", "Year", "Site", "Origin", "Treatment")) %>% 
   left_join(ResultsAdapt, by = c("Species", "Year", "Variable", "Treatment")) %>% 
+  filter(Variable %in% c("Bud", "Flower", "Seed")) %>% 
   mutate(Variable = factor(Variable, levels = c("Bud", "Flower", "Seed"))) %>%
   mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
   mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
@@ -217,3 +226,35 @@ PhenologyCumTAdapt <- DiffVariablesAdapt %>%
   facet_grid(Variable ~ Species, labeller=labeller(Species = SP, Variable = STAGE))
 
 ggsave(PhenologyCumTAdapt, filename = "PhenologyCumTAdapt.jpg", height = 6, width = 8)
+
+
+### BIOMASS AND SEEDS ###
+# Which tests are significant
+Adapt_Growth <- read_excel(path = "Adapt_Growth.xlsx")
+
+ProductionAdapt <- DiffVariablesAdapt %>% 
+  left_join(SMDiffAdapt, by = c("Species", "Year", "Site", "Origin", "Treatment")) %>% 
+  left_join(Adapt_Growth, by = c("Species", "Year", "Variable", "Treatment")) %>% 
+  filter(Variable %in% c("EndSize", "RepOutput")) %>%
+  mutate(Treatment = plyr::mapvalues(Treatment, c("Warmer", "LaterSM", "WarmLate"), c("Warmer", "Later SM", "Warm & late SM"))) %>%
+  mutate(Treatment = factor(Treatment, levels = c("Warmer", "Later SM", "Warm & late SM"))) %>%
+  # change order of species
+  mutate(Species = factor(Species, levels = c("RAN", "LEO"))) %>% 
+  filter(N >= 5) %>% 
+  ggplot(aes(x = SMDiff, y = mean, colour = Treatment, shape = factor(Year), alpha = factor(signif), ymax = mean + 1.96*se, ymin = mean - 1.96*se)) + 
+  geom_hline(yintercept = 0, color = "grey", linetype = "dashed") +
+  scale_colour_manual(name = "Treatment", values = c("#E69F00", "#56B4E9", "#D55E00")) +
+  scale_shape_manual(name = "Year", values = c(15, 17)) +
+  scale_alpha_manual(name = "Significance", values = c(0.4, 1)) +
+  labs(y = "Difference in longest leave [cm] or reproductive output [g] \n after SMT between treatment and destination-control", x = "Shift in the timing of snowmelt due to transplant \n between origin and destination site [days]", title = "Genetic difference: destination-control") +
+  geom_errorbar(width = 0.18) +
+  geom_point(size = 3) +
+  panel_border(colour = "black", remove = FALSE) +
+  theme(#legend.position = "none",
+    text = element_text(size = 10),
+    axis.text=element_text(size = 10),
+    axis.title=element_text(size = 10),
+    strip.text.x = element_text(face = "italic")) +
+  facet_grid(Variable ~ Species, scales = "free_y", labeller=labeller(Species = SP, Variable = PRODUCTION))
+
+ggsave(ProductionAdapt, filename = "ProductionAdapt.jpg", height = 4, width = 6)
