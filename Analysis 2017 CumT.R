@@ -542,118 +542,103 @@ write_xlsx(Adapt_cumTPhenology, path = "Phenology_cumTAdapt.xlsx")
 #### GROWTH and REP OUTPUT ####
 
 ## WARM
-dfPolli <- Pollination17 %>% 
-  filter(Pollination == "control") %>% 
-  mutate(DestPLevel.cen = scale(DestPLevel, scale = FALSE)) %>% 
+dfPolli <- CumulativeTemperature %>% 
   # remove Control plants at Gudmedalen and Skj, because they are not needed for the adaptation question
   filter(Origin != "GUD" | Treatment != "Control") %>%  
   filter(Origin != "SKJ" | Treatment != "Control") %>%
   # select only controls and warmer
-  filter(Treatment %in% c("Control", "Warmer")) %>% 
-  filter(Variable %in% c("EndSize", "RepOutput")) %>% 
-  filter(!is.na(value)) %>% # remove NAs
-  filter(!(Species == "LEO" & Variable == "RepOutput")) %>% # remove RepOutput for LEO, too few observations, see below
-  group_by(Species, Variable) %>% 
+  filter(Treatment %in% c("Control", "Warmer"),
+         Variable %in% c("EndSize", "RepOutput"),
+         !is.na(value)) %>% # remove NAs
+  filter(!(Species == "LEO" & Variable == "RepOutput" & Year == 2017)) %>% # remove RepOutput for LEO, too few observations, see below
+  group_by(Year, Species, Variable) %>% 
   do(fit = lme(value ~ Treatment * DestPLevel.cen, random = ~ 1 | NewBlock, data = .))
 
+# get the summary statistics by group in a tidy data_frame
+Adapt_WarmGrowth1 <- TidyResults(dfPolli, "Warmer")
 
-# get the coefficients by group in a tidy data_frame
-Adapt_warmerGrowth <- tidy(dfPolli, fit, effects = "fixed") %>% 
-  mutate(estimate = (round(exp(estimate), 2)), std.error = round(std.error, 2), statistic = round(statistic, 2), p.value = round(p.value, 3)) %>% 
-  mutate(Comparision = "Warmer")
-
-
-# Exception: only LEO plants at VES
-dfPolli <- Pollination17 %>% 
-  filter(Pollination == "control") %>% 
-  filter(Species == "LEO") %>% 
-  filter(Site == "VES") %>%  
+dfPolli <- CumulativeTemperature %>% 
+  # remove Control plants at Gudmedalen and Skj, because they are not needed for the adaptation question
+  filter(Origin != "GUD" | Treatment != "Control") %>%  
+  filter(Origin != "SKJ" | Treatment != "Control") %>%
   # select only controls and warmer
-  filter(Treatment %in% c("Control", "Warmer")) %>% 
-  filter(Variable %in% c("RepOutput")) %>% 
-  filter(!is.na(value)) %>% # remove NAs
-  group_by(Variable) %>% 
+  filter(Treatment %in% c("Control", "Warmer"),
+         Variable %in% c("RepOutput"),
+         !is.na(value),
+         Species == "LEO",
+         Year == 2017) %>% # remove RepOutput for LEO, too few observations, see below
+  group_by(Year, Species, Variable) %>% 
   do(fit = lme(value ~ Treatment, random = ~ 1 | NewBlock, data = .))
 
-LeoWarmAdapt <- tidy(dfPolli, fit, effects = "fixed") %>% 
-  mutate(estimate = (round(exp(estimate), 2)), std.error = round(std.error, 2), statistic = round(statistic, 2), p.value = round(p.value, 3)) %>% 
-  mutate(Comparision = "Warmer") %>% 
-  mutate(Species = "LEO")
+# get the summary statistics by group in a tidy data_frame
+Adapt_WarmGrowth2 <- TidyResults(dfPolli, "Warmer")
 
-Adapt_warmerGrowth <- Adapt_warmerGrowth %>% 
-  rbind(LeoWarmAdapt)
+
+Adapt_warmerGrowth <- Adapt_WarmGrowth1 %>% 
+  rbind(Adapt_WarmGrowth2)
 
 
 #***************************************************************************************
 ## WETTER
-dfPolli <- Pollination17 %>% 
-  filter(Pollination == "control") %>% 
-  mutate(DestTLevel.cen = scale(DestTLevel, scale = FALSE)) %>% 
+dfPolli <- CumulativeTemperature %>% 
   # remove Control plants at Gudmedalen and Skj, because they are not needed for the adaptation question
   filter(Origin != "GUD" | Treatment != "Control") %>%  
   filter(Origin != "RAM" | Treatment != "Control") %>%  
   # select only controls and warmer
-  filter(Treatment %in% c("Control", "LaterSM")) %>% 
-  filter(Variable %in% c("EndSize", "RepOutput")) %>% 
-  filter(!is.na(value)) %>% # remove NAs
-  group_by(Species, Variable) %>% 
+  filter(Treatment %in% c("Control", "LaterSM"),
+         Variable %in% c("EndSize", "RepOutput"),
+         !is.na(value)) %>% # remove NAs
+  filter(!(Year == "2015" & Variable == "RepOutput")) %>% 
+  filter(!(Species == "RAN" & Year == "2017" & Variable == "RepOutput")) %>% 
+  group_by(Year, Species, Variable) %>% 
   do(fit = lme(value ~ Treatment * DestTLevel.cen, random = ~ 1 | NewBlock, data = .))
 
 
-# get the coefficients by group in a tidy data_frame
-Adapt_wetterGrowth <- tidy(dfPolli, fit, effects = "fixed") %>% 
-  mutate(estimate = (round(exp(estimate), 2)), std.error = round(std.error, 2), statistic = round(statistic, 2), p.value = round(p.value, 3)) %>% 
-  mutate(Comparision = "Later SM") %>% 
-  # remove RAN and Late SM
-  filter(!(Species == "RAN" & Variable == "RepOutput" & term == "(Intercept)")) %>% 
-  filter(!(Species == "RAN" & Variable == "RepOutput" & term == "TreatmentLaterSM"))
+# get the summary statistics by group in a tidy data_frame
+Adapt_WetGrowth1 <- TidyResults(dfPolli, "LaterSM")
 
 
 # Exception: only RAN plants at SKJ
-dfPolli <- Pollination17 %>% 
-  filter(Pollination == "control") %>% 
-  filter(Species == "RAN") %>% 
+dfPolli <- CumulativeTemperature %>% 
   # remove Control plants at Gudmedalen and Skj, because they are not needed for the adaptation question
-  filter(Site == "SKJ") %>%  
+  filter(Origin != "GUD" | Treatment != "Control") %>%  
+  filter(Origin != "RAM" | Treatment != "Control") %>%  
   # select only controls and warmer
-  filter(Treatment %in% c("Control", "LaterSM")) %>% 
-  filter(Variable %in% c("RepOutput")) %>% 
-  filter(!is.na(value)) %>% # remove NAs
-  group_by(Variable) %>% 
+  filter(Treatment %in% c("Control", "LaterSM"),
+         Variable %in% c("RepOutput"),
+         !is.na(value),
+         Species == "RAN",
+         Year == 2017) %>% # remove NAs
+  group_by(Year, Species, Variable) %>% 
   do(fit = lme(value ~ Treatment, random = ~ 1 | NewBlock, data = .))
 
-RanLateAdapt <- tidy(dfPolli, fit, effects = "fixed") %>% 
-  mutate(estimate = (round(exp(estimate), 2)), std.error = round(std.error, 2), statistic = round(statistic, 2), p.value = round(p.value, 3)) %>% 
-  mutate(Comparision = "Later SM") %>% 
-  mutate(Species = "RAN")
+# get the summary statistics by group in a tidy data_frame
+Adapt_WetGrowth2 <- TidyResults(dfPolli, "LaterSM")
 
-Adapt_wetterGrowth <- Adapt_wetterGrowth %>% 
-  rbind(RanLateAdapt)
+Adapt_wetterGrowth <- Adapt_WetGrowth1 %>% 
+  rbind(Adapt_WetGrowth2)
 
 
 #***************************************************************************************
 ## WARM AND WETTER
-dfPolli <- Pollination17 %>% 
-  filter(Pollination == "control") %>% 
+dfPolli <- CumulativeTemperature %>% 
   # only keep Control plants at VES
   filter(Origin != "GUD" | Treatment != "Control") %>%  
   filter(Origin != "SKJ" | Treatment != "Control") %>%  
   filter(Origin != "RAM" | Treatment != "Control") %>%  
   # select only controls and warm and wet
-  filter(Treatment %in% c("Control", "WarmLate")) %>% # select treatments
-  filter(Variable %in% c("EndSize", "RepOutput")) %>% 
-  filter(!is.na(value)) %>% # remove NAs
-  group_by(Species, Variable) %>% 
+  filter(Treatment %in% c("Control", "WarmLate"),
+         Variable %in% c("EndSize", "RepOutput"),
+         !is.na(value)) %>% # remove NAs
+  group_by(Year, Species, Variable) %>% 
   do(fit = lme(value ~ Treatment, random = ~ 1 | NewBlock, data = .))
 
 
-# get the coefficients by group in a tidy data_frame
-Adapt_warmwetGrowth <- tidy(dfPolli, fit, effects = "fixed") %>% 
-  mutate(estimate = (round(exp(estimate), 2)), std.error = round(std.error, 2), statistic = round(statistic, 2), p.value = round(p.value, 3)) %>% 
-  mutate(Comparision = "Warmer & later SM")
+# get the summary statistics by group in a tidy data_frame
+Adapt_WarmWetGrowth <- TidyResults(dfPolli, "WarmLateSM")
 
 
 #### SUMMARY ADDAPTATION PHENOLOGY ####
 Adapt_Growth <- Adapt_warmerGrowth %>% 
-  bind_rows(Adapt_wetterGrowth, Adapt_warmwetGrowth)
-write_xlsx(Adapt_Growth, path = "Output/Adapt_Growth.xlsx", col_names = TRUE)
+  bind_rows(Adapt_wetterGrowth, Adapt_WarmWetGrowth)
+write_xlsx(Adapt_Growth, path = "Adapt_Growth.xlsx", col_names = TRUE)
