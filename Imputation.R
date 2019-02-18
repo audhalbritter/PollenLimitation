@@ -39,6 +39,18 @@ DailyTemperature_Imputed <- 1:5 %>%
 
 save(DailyTemperature_Imputed, file = "DailyTemperature_Imputed.Rdata")
 
+# check imputation
+DailyTemperature_Imputed %>% 
+  mutate(year = year(date), month = month(date)) %>% 
+  group_by(logger, site, year, month, imputation) %>% 
+  summarise(n = n(), var = var(value)) %>% 
+  ggplot(aes(x = month, y = var, color = imputation)) +
+  geom_point() +
+  facet_grid(site ~ logger)
+
+# data ok, but some values in Fauske are a bit high...
+
+
 ggplot(dat_new, aes(x = date, y = value, color = imputation)) +
   geom_line() +
   facet_wrap(~ site)
