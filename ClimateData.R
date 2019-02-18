@@ -27,7 +27,7 @@ SoilmoisturePlot <- soilmoisture %>%
   scale_linetype_manual(name = "Precipitation", values = c(2,1)) +
   facet_wrap(~ Site2) +
   theme(text = element_text(size = 15), axis.text = element_text(size = 15), legend.position = "none")
-ggsave(SoilmoisturePlot, filename = "FinalFigures/SoilmoisturePlot.jpg", width = 6, height = 4)
+#ggsave(SoilmoisturePlot, filename = "FinalFigures/SoilmoisturePlot.jpg", width = 6, height = 4)
 
 
 #### READ IN iBUTTON ####
@@ -122,4 +122,50 @@ ClimatePlot <- DailyAndCumulativeTemp %>%
         legend.text = element_text(size = 8),
         legend.title = element_text(size = 10),
         legend.position = "top")
-ggsave(ClimatePlot, filename = "FinalFigures/ClimatePlot.jpg", width = 6, height = 4.5)
+#ggsave(ClimatePlot, filename = "FinalFigures/ClimatePlot.jpg", width = 6, height = 4.5)
+
+# Calculate summer temp in 2015 and 2017
+DailyAndCumulativeTemp %>% 
+  mutate(Month = month(as.Date(doy, origin = "2015-01-01"))) %>% 
+  filter(variable == "dailyTemperature",
+         Month %in% c(6,7,8,9)) %>% 
+  group_by(Site, Year) %>% 
+  summarise(mean = mean(value)) %>% 
+  spread(key = Year, value = mean) %>% 
+  mutate(Diff = `2017` - `2015`)
+
+# gridded data for precipitation
+load(file = "~/Dropbox/Bergen/SeedClim Climate/SeedClim-Climate-Data/GriddedDailyClimateData2009-2017.RData", verbose = TRUE)
+
+dailyTemp %>% 
+  filter(site %in% c("Gudmedalen", "Rambera", "Skjellingahaugen", "Veskre"),
+         year(date) %in% c(2015, 2017),
+         month(date) %in% c(6,7,8,9)) %>% 
+  group_by(year(date)) %>% 
+  summarise(mean = mean(value), se = sd(value)/sqrt(n())) %>% 
+  unite(Value, mean, se, sep = "_") %>% 
+  spread(key = `year(date)`, value = Value) %>%
+  separate(col = `2015`, into = c("2015_mean", "2015_se"), sep = "_", convert = TRUE) %>% 
+  separate(col = `2017`, into = c("2017_mean", "2017_se"), sep = "_", convert = TRUE) %>% 
+  mutate(Diff = `2017_mean` - `2015_mean`,
+         SE = sqrt(`2017_se`^2 + `2015_se`^2))
+
+
+# Slopes of cumulative temp
+res1 <- DailyAndCumulativeTemp %>%
+  filter(variable == "cumulativeTemperature",
+         value > 0) %>% 
+  group_by(Year) %>% 
+  do(fit = lm(value ~ doy + Site, data = .))
+tidy(res1, fit)
+
+
+dat15 <- DailyAndCumulativeTemp %>%
+  filter(variable == "cumulativeTemperature",
+         value > 0,
+         Year == 2015)
+
+fit1 = lm(value ~ doy * Site, data = dat15)
+fit2 = lm(value ~ doy + Site, data = dat15)
+anova(fit1, fit2)
+
