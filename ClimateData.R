@@ -9,7 +9,7 @@ library("gridExtra")
 soilmoisture <- read_excel(path = "Data/2017/Soilmoisture_2017.xlsx", sheet = 1, col_names = TRUE, col_types = c(rep("text", 2), "date", rep("numeric", 3), rep("text", 4)))
 
 soilmoisture <- soilmoisture %>% 
-  select(-average) %>% 
+  dplyr::select(-average) %>% 
   mutate(Soilmoisture = (Soilmoisture_1 + Soilmoisture_2 + Soilmoisture_3)/3) %>% # calculate mean
   mutate(Block = gsub(" ", "_", Block))
 
