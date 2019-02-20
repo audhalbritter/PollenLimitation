@@ -11,30 +11,7 @@ source("ClimateData.R")
 
 #***************************************************************************************
 # Prepare cum temp
-CumulativeTemp <- DailyAndCumulativeTemp %>% 
-  filter(variable == "cumulativeTemperature") %>% 
-  rename("cumTemp" = "value")
 
-# Biomass and RepOutput
-Production <- Pollination %>% 
-  # remove Second Flowers
-  filter(!Pollination == "") %>% 
-  filter(Variable %in% c("EndSize", "RepOutput"))
-
-### Join cumulative temperature with phenology data
-CumulativeTemperature <- Pollination %>% 
-  # remove Second Flowers
-  filter(!Pollination == "") %>% 
-  filter(Variable %in% c("Bud", "Flower", "Seed")) %>%
-  left_join(CumulativeTemp, by = c("Site" = "Site", "value" = "dssm", "Year", "SM")) %>% 
-  bind_rows(Production)
-
-CumulativeTemperature <- CumulativeTemperature %>% 
-  # centre Plevel
-  mutate(OrigPLevel.cen = scale(OrigPLevel, scale = FALSE),
-         OrigTLevel.cen = scale(OrigTLevel, scale = FALSE),
-         DestPLevel.cen = scale(DestPLevel, scale = FALSE),
-         DestTLevel.cen = scale(DestTLevel, scale = FALSE))
 
 ####################
 #### PLASTICITY ####
@@ -54,8 +31,22 @@ dfPolli <- CumulativeTemperature %>%
   filter(!(Year == 2015 & Species == "LEO")) %>% 
   # use group by to do analysis for each year, species and pheno stage
   group_by(Year, Species, Variable) %>% 
-  do(fit = lme(cumTemp ~ Treatment * OrigPLevel.cen, random = ~ 1 | NewBlock, data = .))
-  
+  #do(fit = lme(cumTemp ~ Treatment * OrigPLevel.cen, random = ~ 1 | NewBlock, data = .))
+  #nest() %>% 
+  #mutate(fit = map(data, ~ lmer(cumTemp ~ Treatment * OrigPLevel.cen + (1|NewBlock), data = .))) %>% 
+  #mutate(coef = map(fit, tidy, effects = "fixed")) %>% 
+  #unnest(coef) %>% 
+  #rename(df = statistic, t.value = p.value) %>% 
+  #mutate(p.value = coalesce(V1, V2, V3, V4, V5, V6, V7, V8, V9)) %>%
+  #dplyr::select(-c(V1:V9)) %>% 
+  #mutate(estimate = (round(exp(estimate), 2)), 
+         #std.error = round(std.error, 2), 
+         #t.value = round(t.value, 2), 
+         #p.value = round(p.value, 3),
+         #term = gsub("Treatment", "", term),
+         #signif = ifelse(p.value < 0.05, 1, 0))
+
+#tidy(dfPolli, fit, effects = "fixed")    
 ### Check model assumptions (add first line to dfPolli)
 # do(model.check = ModelCheck(lme(cumTemp ~ Treatment * OrigPLevel.cen, random = ~ 1 | NewBlock, data = .)))
 # pdf()
