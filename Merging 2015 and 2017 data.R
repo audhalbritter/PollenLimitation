@@ -160,6 +160,7 @@ Pollination <- Treatment %>%
   select(-Date_bs, -Date_f, -Date_s, -Date_rs) %>% 
   bind_rows(data2015Ran) %>% 
   gather(key = Variable, value = value, days_smb, days_smf, days_sms, days_smrs, InitSize, EndSize, RepOutput, Growth) %>%
+  filter(!is.na(value)) %>% 
   mutate(Flowering = factor(Flowering)) %>% 
   
   # Make Code nice
